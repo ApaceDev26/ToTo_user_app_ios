@@ -177,7 +177,7 @@ jobs:
 
           flutter build ipa -v \
             --release \
-            --build-name=1.0.0 \
+            --build-name=1.0.1 \
             --build-number=6 \
             --export-options-plist=ios/ExportOptions.plist \
             2>&1 | tee flutter_build.log
@@ -272,5 +272,6 @@ jobs:
           name: ToTo-Food-iOS-IPA
           path: build/ios/ipa/*.ipa
           if-no-files-found: ignore
+
 
 

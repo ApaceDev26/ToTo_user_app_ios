@@ -1,4 +1,3 @@
-import 'package:icons_plus/icons_plus.dart';
 import 'package:toto_user/features/cart/controllers/cart_controller.dart';
 import 'package:toto_user/util/styles.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +17,7 @@ class CartWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(clipBehavior: Clip.none, children: [
       Icon(
-        AntDesign.shopping_cart_outline,
+        Icons.shopping_cart_outlined,
         size: size,
         color: color,
       ),

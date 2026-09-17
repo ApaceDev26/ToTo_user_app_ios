@@ -6,7 +6,7 @@ import 'package:toto_user/features/category/domain/models/category_model.dart';
 import 'package:toto_user/features/location/domain/models/zone_response_model.dart';
 import 'package:toto_user/features/restaurant/domain/models/recommended_product_model.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 abstract class RestaurantServiceInterface {
   double getRestaurantDistanceFromUser(LatLng restaurantLatLng);
@@ -45,3 +45,4 @@ abstract class RestaurantServiceInterface {
       DateTime dateTime, bool active, List<Schedules>? schedules);
   bool isRestaurantOpenNow(bool active, List<Schedules>? schedules);
 }
+

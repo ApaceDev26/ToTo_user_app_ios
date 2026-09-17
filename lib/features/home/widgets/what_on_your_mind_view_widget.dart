@@ -44,7 +44,7 @@ class WhatOnYourMindViewWidget extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: isMobile ? 118 : 170,
+          height: isMobile ? 122 : 175,
           child: categoryController.categoryList != null
               ? ListView.builder(
                   physics: isMobile
@@ -109,13 +109,14 @@ class WhatOnYourMindViewWidget extends StatelessWidget {
                               height: size,
                               padding: const EdgeInsets.all(AppSpacing.xxs),
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
+                                borderRadius: AppRadius.mdAll, // সার্কেল থেকে প্রিমিয়াম রাউন্ডেড স্কয়ারে রূপান্তর
                                 color: colors.accentSoft,
                                 border: Border.all(
                                   color: colors.line.withValues(alpha: 0.7),
                                 ),
                               ),
-                              child: ClipOval(
+                              child: ClipRRect(
+                                borderRadius: AppRadius.smAll, // ইমেজের কোণাগুলো সুন্দরভাবে রাউন্ড করার জন্য
                                 child: CustomImageWidget(
                                   image:
                                       '${categoryController.categoryList![index].imageFullUrl}',
@@ -162,7 +163,7 @@ class WebWhatOnYourMindViewShimmer extends StatelessWidget {
     final isMobile = ResponsiveHelper.isMobile(context);
 
     return SizedBox(
-      height: isMobile ? 120 : 170,
+      height: isMobile ? 122 : 175,
       child: ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -180,11 +181,12 @@ class WebWhatOnYourMindViewShimmer extends StatelessWidget {
               width: isMobile ? 70 : 108,
               child: Column(children: [
                 Expanded(
-                  child: ClipOval(
+                  child: ClipRRect(
+                    borderRadius: AppRadius.mdAll,
                     child: Shimmer(
                       child: Container(
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          borderRadius: AppRadius.mdAll,
                           color: colors.line,
                         ),
                         height: isMobile ? 64 : 80,

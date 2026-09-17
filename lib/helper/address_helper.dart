@@ -9,6 +9,7 @@ import '../util/app_constants.dart';
 
 class AddressHelper {
   static Future<bool> saveAddressInSharedPref(AddressModel address) async {
+    debugPrint('SAVED LOCATION DEBUG -> LAT: ${address.latitude}, LNG: ${address.longitude}, ADDRESS: ${address.address}');
     SharedPreferences sharedPreferences = Get.find<SharedPreferences>();
     String userAddress = jsonEncode(address.toJson());
     Get.find<ApiClient>().updateHeader(
@@ -39,3 +40,4 @@ class AddressHelper {
   }
 
 }
+

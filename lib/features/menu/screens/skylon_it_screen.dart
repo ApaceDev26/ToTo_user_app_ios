@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:toto_user/common/widgets/custom_app_bar_widget.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
@@ -196,7 +195,7 @@ class SkylonItScreen extends StatelessWidget {
                 Expanded(
                   child: _CompactActionButton(
                     label: 'facebook'.tr,
-                    icon: FontAwesome.facebook_f_brand,
+                    icon: Icons.facebook,
                     foreground: Colors.white,
                     background: const Color(0xFF1877F2),
                     height: 44,
@@ -269,7 +268,7 @@ class _InfoTile extends StatelessWidget {
                         Expanded(
                           child: _CompactActionButton(
                             label: 'whatsapp'.tr,
-                            icon: FontAwesome.whatsapp_brand,
+                            icon: Icons.chat,
                             foreground: Colors.white,
                             background: const Color(0xFF25D366),
                             onPressed: onWhatsapp!,

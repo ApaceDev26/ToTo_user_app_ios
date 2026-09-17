@@ -12,7 +12,7 @@ import 'package:toto_user/util/styles.dart';
 import 'package:toto_user/common/widgets/custom_text_field_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class DeliveryInfoFields extends StatelessWidget {
   final CheckoutController checkoutController;
@@ -216,3 +216,5 @@ class DeliveryInfoFields extends StatelessWidget {
     );
   }
 }
+
+

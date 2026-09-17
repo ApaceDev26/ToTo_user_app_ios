@@ -13,7 +13,7 @@ import 'package:toto_user/features/auth/domain/services/restaurant_registration_
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:toto_user/helper/date_converter.dart';
 import 'package:toto_user/helper/route_helper.dart';

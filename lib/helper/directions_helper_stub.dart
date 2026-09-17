@@ -1,4 +1,4 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 /// Stub implementation for non-web platforms
 /// This file is used by conditional imports when not on web
@@ -12,3 +12,4 @@ class DirectionsHelperWeb {
         'Web DirectionsService is only available on web platform');
   }
 }
+

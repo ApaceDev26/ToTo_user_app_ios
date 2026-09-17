@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart' show GetPlatform;
 import 'directions_helper_web.dart'
     if (dart.library.io) 'directions_helper_stub.dart';
@@ -232,3 +232,4 @@ class DirectionsHelper {
     return points;
   }
 }
+

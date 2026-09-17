@@ -20,6 +20,7 @@ class BannerViewWidget1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final ValueNotifier<int> currentBannerIndex = ValueNotifier<int>(0);
 
     return GetBuilder<HomeController>(builder: (homeController) {
       List<String?>? bannerList = homeController.bannerImageList;
@@ -46,7 +47,8 @@ class BannerViewWidget1 extends StatelessWidget {
                               viewportFraction: 0.95,
                               autoPlayInterval: const Duration(seconds: 7),
                               onPageChanged: (index, reason) {
-                                homeController.setCurrentIndex(index, true);
+                                currentBannerIndex.value = index;
+                                homeController.setCurrentIndex(index, false);
                               },
                             ),
                             itemCount:
@@ -112,31 +114,35 @@ class BannerViewWidget1 extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: homeController.bannerImageList!
-                              .asMap()
-                              .entries
-                              .map((entry) {
-                            final index = entry.key;
-                            final active =
-                                index == homeController.currentIndex;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.xxs),
-                              child: AnimatedContainer(
-                                duration: AppDurations.fast,
-                                height: 4,
-                                width: active ? 20 : 10,
-                                decoration: BoxDecoration(
-                                  borderRadius: AppRadius.pillAll,
-                                  color: active
-                                      ? colors.accent
-                                      : colors.lineStrong,
-                                ),
-                              ),
+                        ValueListenableBuilder<int>(
+                          valueListenable: currentBannerIndex,
+                          builder: (context, activeIndex, _) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: homeController.bannerImageList!
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                final index = entry.key;
+                                final active = index == activeIndex;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.xxs),
+                                  child: AnimatedContainer(
+                                    duration: AppDurations.fast,
+                                    height: 4,
+                                    width: active ? 20 : 10,
+                                    decoration: BoxDecoration(
+                                      borderRadius: AppRadius.pillAll,
+                                      color: active
+                                          ? colors.accent
+                                          : colors.lineStrong,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             );
-                          }).toList(),
+                          },
                         ),
                       ],
                     )

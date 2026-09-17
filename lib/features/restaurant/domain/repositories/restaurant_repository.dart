@@ -10,7 +10,7 @@ import 'package:toto_user/features/restaurant/domain/repositories/restaurant_rep
 import 'package:toto_user/util/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get_connect.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RestaurantRepository implements RestaurantRepositoryInterface {

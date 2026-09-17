@@ -9,7 +9,7 @@ import 'package:toto_user/features/auth/domain/services/deliveryman_registration
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DeliverymanRegistrationController extends GetxController implements GetxService {

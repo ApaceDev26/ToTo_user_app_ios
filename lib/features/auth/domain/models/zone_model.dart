@@ -1,4 +1,4 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class ZoneModel {
   int? id;
@@ -104,3 +104,4 @@ class FormatedCoordinates {
     return data;
   }
 }
+

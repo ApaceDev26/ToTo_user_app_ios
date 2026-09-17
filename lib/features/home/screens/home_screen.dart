@@ -1,4 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
+
+import 'package:toto_user/common/enums/data_source_enum.dart';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/rendering.dart';
@@ -104,6 +106,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final ConfigModel? _configModel = Get.find<SplashController>().configModel;
   bool _isLogin = false;
   Timer? _scrollCollapseTimer;
+  Timer? _restaurantStatusTimer;
+  bool _restaurantStatusRefreshRunning = false;
   bool _hasScrolled = false;
   bool _showBackToTop = false;
 
@@ -120,6 +124,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     _isLogin = Get.find<AuthController>().isLoggedIn();
+
+    _restaurantStatusTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _refreshRestaurantStatusSilently(),
+    );
     HomeScreen.loadData(false).then((value) {
       Get.find<SplashController>().getReferBottomSheetStatus();
 
@@ -159,23 +168,46 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
         });
       }
-
-      if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
-        if (Get.find<HomeController>().showFavButton) {
-          Get.find<HomeController>().changeFavVisibility();
-          Future.delayed(const Duration(milliseconds: 800),
-              () => Get.find<HomeController>().changeFavVisibility());
-        }
-      } else if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
-        if (Get.find<HomeController>().showFavButton) {
-          Get.find<HomeController>().changeFavVisibility();
-          Future.delayed(const Duration(milliseconds: 800),
-              () => Get.find<HomeController>().changeFavVisibility());
-        }
-      }
     });
+  }
+  Future<void> _refreshRestaurantStatusSilently() async {
+    if (!mounted || _restaurantStatusRefreshRunning) return;
+
+    _restaurantStatusRefreshRunning = true;
+
+    try {
+      final restaurantController = Get.find<RestaurantController>();
+
+      await restaurantController.getRestaurantList(
+        1,
+        false,
+        source: DataSourceEnum.client,
+      );
+
+      if (_configModel?.popularRestaurant == 1) {
+        await restaurantController.getPopularRestaurantList(
+          false,
+          'all',
+          false,
+          dataSource: DataSourceEnum.client,
+          fromRecall: true,
+        );
+      }
+
+      if (_configModel?.newRestaurant == 1) {
+        await restaurantController.getLatestRestaurantList(
+          false,
+          'all',
+          false,
+          dataSource: DataSourceEnum.client,
+          fromRecall: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('Restaurant status silent refresh failed: $e');
+    } finally {
+      _restaurantStatusRefreshRunning = false;
+    }
   }
 
   @override
@@ -211,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _scrollCollapseTimer?.cancel();
+    _restaurantStatusTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -318,20 +351,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 /// App Bar
                                 SliverAppBar(
                                   pinned: true,
-                                  toolbarHeight: 10,
+                                  toolbarHeight: 5,
                                   expandedHeight:
                                       ResponsiveHelper.isTab(context)
-                                          ? 72
+                                          ? 78
                                           : GetPlatform.isWeb
-                                              ? 72
-                                              : 52,
+                                              ? 78
+                                              : 60, // à¦“à¦ªà¦°à§‡ à¦à¦¬à¦‚ à¦¸à¦¾à¦°à§à¦šà¦¬à¦¾à¦°à§‡à¦° à¦®à¦¾à¦à¦–à¦¾à¦¨à§‡à¦° à¦¸à§à¦ªà§‡à¦¸ à¦à¦•à¦¦à¦® à¦•à¦®à¦¿à§Ÿà§‡ à¦«à§‡à¦²à¦¾ à¦¹à¦²à§‹
                                   floating: false,
                                   elevation: 0,
                                   backgroundColor:
                                       ResponsiveHelper.isDesktop(context)
                                           ? Colors.transparent
-                                          : colors.canvas,
-                                  surfaceTintColor: colors.canvas,
+                                          : colors.accent,
+                                  surfaceTintColor: colors.accent,
                                   flexibleSpace: FlexibleSpaceBar(
                                       titlePadding: EdgeInsets.zero,
                                       centerTitle: true,
@@ -342,9 +375,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                           return Center(
                                               child: Container(
                                             width: Dimensions.webMaxWidth,
-                                            color: Colors.transparent,
+                                            color: colors.accent,
                                             padding:
-                                                const EdgeInsets.only(top: 28),
+                                                const EdgeInsets.only(top: 14, bottom: 0), // à¦Ÿà¦ª à¦ªà§à¦¯à¦¾à¦¡à¦¿à¦‚à¦“ à¦Ÿà§à¦°à¦¿à¦® à¦•à¦°à¦¾ à¦¹à¦²à§‹ à¦¯à¦¾à¦¤à§‡ à¦•à¦¨à§à¦Ÿà§‡à¦¨à§à¦Ÿ à¦Ÿà¦¾à¦‡à¦Ÿ à¦¥à¦¾à¦•à§‡
                                             child: Opacity(
                                               opacity: 1 - scrollPoint,
                                               child: Row(children: [
@@ -381,8 +414,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                                     Icons
                                                                         .location_on_rounded,
                                                                     size: 18,
-                                                                    color: colors
-                                                                        .accent,
+                                                                    color: Colors.white, // à¦…à¦°à§‡à¦žà§à¦œ à¦¬à§à¦¯à¦¾à¦•à¦—à§à¦°à¦¾à¦‰à¦¨à§à¦¡à§‡ à¦¸à¦¾à¦¦à¦¾ à¦†à¦‡à¦•à¦¨ à¦¸à§à¦¨à§à¦¦à¦° à¦²à¦¾à¦—à¦¬à§‡
                                                                   ),
                                                                   const SizedBox(
                                                                       width: AppSpacing
@@ -397,8 +429,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                                         : 'your_location'
                                                                             .tr,
                                                                     style: AppTypography
-                                                                        .labelMd(
-                                                                            colors.ink),
+                                                                        .labelMd(Colors.white), // à¦…à¦°à§‡à¦žà§à¦œ à¦¬à§à¦¯à¦¾à¦•à¦—à§à¦°à¦¾à¦‰à¦¨à§à¦¡à§‡ à¦¸à¦¾à¦¦à¦¾ à¦Ÿà§‡à¦•à§à¦¸à¦Ÿ à¦ªà§à¦°à¦¿à¦®à¦¿à§Ÿà¦¾à¦® à¦²à¦¾à¦—à¦¬à§‡
                                                                     maxLines: 1,
                                                                     overflow:
                                                                         TextOverflow
@@ -433,14 +464,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                                             Flexible(
                                                                               child: Text(
                                                                                 AddressHelper.getAddressFromSharedPref()!.address!,
-                                                                                style: AppTypography.bodySm(colors.inkMuted),
+                                                                                style: AppTypography.bodySm(Colors.white70), // à¦¹à¦¾à¦²à¦•à¦¾ à¦¸à¦¾à¦¦à¦¾ à¦Ÿà§‡à¦•à§à¦¸à¦Ÿ à¦à¦¡à§à¦°à§‡à¦¸à§‡à¦° à¦œà¦¨à§à¦¯
                                                                                 maxLines: 1,
                                                                                 overflow: TextOverflow.ellipsis,
                                                                               ),
                                                                             ),
                                                                             Icon(
                                                                               Icons.keyboard_arrow_down_rounded,
-                                                                              color: colors.inkFaint,
+                                                                              color: Colors.white70,
                                                                               size: 18,
                                                                             ),
                                                                           ],
@@ -463,54 +494,57 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                         builder:
                                                             (notificationController) {
                                                       return Container(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: colors.surface,
-                                                          borderRadius:
-                                                              AppRadius.smAll,
+                                                        width: 42,
+                                                        height: 42,
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white.withValues(alpha: 0.96),
+                                                          borderRadius: BorderRadius.circular(14),
                                                           border: Border.all(
-                                                              color:
-                                                                  colors.line),
-                                                          boxShadow:
-                                                              AppShadows.of(
-                                                                  context, 1),
-                                                        ),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(
-                                                                AppSpacing.sm),
-                                                        child: Stack(children: [
-                                                          Icon(
-                                                            Iconsax
-                                                                .notification,
-                                                            size: 20,
-                                                            color:
-                                                                colors.accent,
+                                                            color: Colors.white.withValues(alpha: 0.80),
+                                                            width: 1.2,
                                                           ),
-                                                          notificationController
-                                                                  .hasNotification
-                                                              ? Positioned(
-                                                                  top: 0,
-                                                                  right: 0,
-                                                                  child:
-                                                                      Container(
-                                                                    height: 8,
-                                                                    width: 8,
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: colors
-                                                                          .warm,
-                                                                      shape: BoxShape
-                                                                          .circle,
-                                                                      border: Border.all(
-                                                                          width:
-                                                                              1.5,
-                                                                          color:
-                                                                              colors.surface),
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: Colors.black.withValues(alpha: 0.10),
+                                                              blurRadius: 12,
+                                                              offset: const Offset(0, 4),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        child: Stack(
+                                                          clipBehavior: Clip.none,
+                                                          alignment: Alignment.center,
+                                                          children: [
+                                                            Icon(
+                                                              Iconsax.notification,
+                                                              size: 22,
+                                                              color: colors.accent,
+                                                            ),
+                                                            if (notificationController.hasNotification)
+                                                              Positioned(
+                                                                top: 6,
+                                                                right: 6,
+                                                                child: Container(
+                                                                  width: 10,
+                                                                  height: 10,
+                                                                  decoration: BoxDecoration(
+                                                                    color: colors.warm,
+                                                                    shape: BoxShape.circle,
+                                                                    border: Border.all(
+                                                                      color: Colors.white,
+                                                                      width: 2,
                                                                     ),
-                                                                  ))
-                                                              : const SizedBox(),
-                                                        ]),
+                                                                    boxShadow: [
+                                                                      BoxShadow(
+                                                                        color: colors.warm.withValues(alpha: 0.35),
+                                                                        blurRadius: 5,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                          ],
+                                                        ),
                                                       );
                                                     }),
                                                     onTap: () => Get.toNamed(
@@ -531,47 +565,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 SliverPersistentHeader(
                                   pinned: true,
                                   delegate: SliverDelegate(
-                                    height: 60,
+                                    height: 72, // à¦¸à¦¾à¦°à§à¦šà¦¬à¦¾à¦°à§‡à¦° à¦‰à¦šà§à¦šà¦¤à¦¾ à¦¸à§à¦¨à§à¦¦à¦° à¦à¦¬à¦‚ à¦¬à§œ à¦°à¦¾à¦–à¦¾ à¦¹à¦²à§‹
                                     child: GestureDetector(
                                       behavior: HitTestBehavior.opaque,
                                       onTap: () => Get.toNamed(
                                           RouteHelper.getSearchRoute()),
                                       child: Container(
-                                        color: colors.canvas,
-                                        alignment: Alignment.center,
+                                        color: colors.accent,
+                                        alignment: Alignment.topCenter, // à¦¸à¦¾à¦°à§à¦šà¦¬à¦¾à¦°à¦Ÿà¦¿à¦•à§‡ à¦à¦•à¦¦à¦® à¦“à¦ªà¦°à§‡à¦° à¦¬à¦°à§à¦¡à¦¾à¦°à§‡ à¦ªà§à¦¶ à¦•à¦°à¦¾ à¦¹à¦²à§‹
                                         child: SizedBox(
                                           width: Dimensions.webMaxWidth,
                                           child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: AppSpacing.xl,
-                                              vertical: AppSpacing.sm,
+                                            padding: const EdgeInsets.only(
+                                              left: AppSpacing.xl,
+                                              right: AppSpacing.xl,
+                                              top: 0, // à¦“à¦ªà¦°à§‡à¦° à¦ªà§à¦¯à¦¾à¦¡à¦¿à¦‚ à§¦ à¦•à¦°à¦¾ à¦¹à¦²à§‹ à¦¯à¦¾à¦¤à§‡ à¦²à§‹à¦•à§‡à¦¶à¦¨à§‡à¦° à¦¸à¦¾à¦¥à§‡ à¦—à§à¦¯à¦¾à¦ª à¦à¦•à¦¦à¦® à¦®à¦¿à¦¶à§‡ à¦¯à¦¾à§Ÿ
+                                              bottom: AppSpacing.xl,
                                             ),
                                             child: Container(
-                                              height: 44,
+                                              height: 52, // à¦†à¦ªà¦¨à¦¾à¦° à¦•à¦¾à¦™à§à¦•à§à¦·à¦¿à¦¤ à¦®à¦¡à¦¾à¦°à§à¦¨ à¦¬à§œ à§«à§¨ à¦¸à¦¾à¦‡à¦œà§‡à¦° à¦¸à¦¾à¦°à§à¦šà¦¬à¦¾à¦°
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                 horizontal: AppSpacing.md,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: colors.surface,
+                                                color: Colors.white,
                                                 borderRadius: AppRadius.mdAll,
-                                                border: Border.all(
-                                                    color: colors.line),
                                                 boxShadow:
-                                                    AppShadows.of(context, 1),
+                                                    AppShadows.of(context, 2), // à¦—à¦­à§€à¦° à¦¶à§à¦¯à¦¾à¦¡à§‹ à¦ªà§à¦°à¦¿à¦®à¦¿à§Ÿà¦¾à¦® à¦²à§à¦•à§‡à¦° à¦œà¦¨à§à¦¯
                                               ),
                                               child: Row(
                                                 children: [
                                                   Icon(
                                                     Icons.search_rounded,
                                                     color: colors.inkMuted,
-                                                    size: 22,
+                                                    size: 24,
                                                   ),
                                                   const SizedBox(
                                                       width: AppSpacing.sm),
                                                   Text(
                                                     '${'search_for'.tr} ',
-                                                    style: AppTypography.bodySm(
+                                                    style: AppTypography.bodyMd(
                                                         colors.inkFaint),
                                                   ),
                                                   Expanded(
@@ -585,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                             'are_you_hungry'.tr,
                                                             textStyle:
                                                                 AppTypography
-                                                                    .bodySm(colors
+                                                                    .bodyMd(colors
                                                                         .accent),
                                                             speed:
                                                                 const Duration(
@@ -596,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                             'pizza'.tr,
                                                             textStyle:
                                                                 AppTypography
-                                                                    .bodySm(colors
+                                                                    .bodyMd(colors
                                                                         .accent),
                                                             speed:
                                                                 const Duration(
@@ -607,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                             'burger'.tr,
                                                             textStyle:
                                                                 AppTypography
-                                                                    .bodySm(colors
+                                                                    .bodyMd(colors
                                                                         .accent),
                                                             speed:
                                                                 const Duration(
@@ -619,18 +653,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                                     ),
                                                   ),
                                                   Container(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            AppSpacing.xs),
+                                                    width: 40,
+                                                    height: 40,
+                                                    alignment: Alignment.center,
                                                     decoration: BoxDecoration(
                                                       color: colors.accentSoft,
                                                       borderRadius:
-                                                          AppRadius.xsAll,
+                                                          BorderRadius.circular(
+                                                              12),
                                                     ),
                                                     child: Icon(
                                                       Icons.tune_rounded,
                                                       color: colors.accent,
-                                                      size: 18,
+                                                      size: 22,
                                                     ),
                                                   ),
                                                 ],
@@ -937,3 +972,8 @@ class SliverDelegate extends SliverPersistentHeaderDelegate {
         child != oldDelegate.child;
   }
 }
+
+
+
+
+

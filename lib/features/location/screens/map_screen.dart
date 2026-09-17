@@ -6,18 +6,14 @@ import 'package:toto_user/features/address/domain/models/address_model.dart';
 import 'package:toto_user/features/home/widgets/google_map_widgets/restaurant_details_sheet_widget.dart';
 import 'package:toto_user/features/location/controllers/location_controller.dart';
 import 'package:toto_user/features/location/widgets/permission_dialog.dart';
-import 'package:toto_user/features/splash/controllers/theme_controller.dart';
 import 'package:toto_user/helper/address_helper.dart';
-import 'package:toto_user/helper/responsive_helper.dart';
 import 'package:toto_user/util/dimensions.dart';
-import 'package:toto_user/util/images.dart';
 import 'package:toto_user/util/styles.dart';
 import 'package:toto_user/common/widgets/custom_app_bar_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:get/get.dart';
-import 'dart:ui';
+import 'package:latlong2/latlong.dart' as ll;
+import 'package:maplibre/maplibre.dart' hide Position;
 import 'package:url_launcher/url_launcher_string.dart';
 
 class MapScreen extends StatefulWidget {
@@ -27,442 +23,412 @@ class MapScreen extends StatefulWidget {
   final bool fromOrder;
   final Restaurant? restaurant;
   final bool fromDineInOrder;
-  const MapScreen(
-      {super.key,
-      required this.address,
-      this.fromRestaurant = false,
-      this.restaurantName,
-      this.fromOrder = false,
-      this.restaurant,
-      this.fromDineInOrder = false});
+
+  const MapScreen({
+    super.key,
+    required this.address,
+    this.fromRestaurant = false,
+    this.restaurantName,
+    this.fromOrder = false,
+    this.restaurant,
+    this.fromDineInOrder = false,
+  });
 
   @override
   MapScreenState createState() => MapScreenState();
 }
 
 class MapScreenState extends State<MapScreen> {
-  late LatLng _latLng;
-  Set<Marker> _markers = {};
-  GoogleMapController? _mapController;
+  static const String _openFreeMapStyle =
+      'https://tiles.openfreemap.org/styles/liberty';
 
-  BitmapDescriptor? _cachedDestinationMarker;
-  BitmapDescriptor? _cachedMyLocationMarker;
-  bool _bitmapDescriptorsInitialized = false;
+  late ll.LatLng _latLng;
+  MapController? _mapController;
 
-  /// Same approach as order_tracking_screen: BitmapDescriptor.asset with
-  /// devicePixelRatio: 3.0 and width/height 50 for sharp markers on high-DPI.
-  Future<void> _initializeBitmapDescriptors() async {
-    if (_bitmapDescriptorsInitialized) return;
-    try {
-      final String destinationPath = widget.fromRestaurant || widget.fromOrder
-          ? Images.restaurantMarker
-          : Images.locationMarker;
-      _cachedDestinationMarker = await BitmapDescriptor.asset(
-        const ImageConfiguration(devicePixelRatio: 3.0),
-        destinationPath,
-        width: 50,
-        height: 50,
-      );
-      _cachedMyLocationMarker = await BitmapDescriptor.asset(
-        const ImageConfiguration(devicePixelRatio: 3.0),
-        Images.myLocationMarker,
-        width: 50,
-        height: 50,
-      );
-      _bitmapDescriptorsInitialized = true;
-    } catch (_) {
-      _cachedDestinationMarker ??=
-          BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
-      _cachedMyLocationMarker ??=
-          BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-      _bitmapDescriptorsInitialized = true;
-    }
-  }
+  ll.LatLng? _myLocation;
+  bool _mapReady = false;
 
   @override
   void initState() {
     super.initState();
 
-    _latLng = LatLng(double.parse(widget.address.latitude!),
-        double.parse(widget.address.longitude!));
+    _latLng = ll.LatLng(
+      double.parse(widget.address.latitude!),
+      double.parse(widget.address.longitude!),
+    );
+
+    if (!widget.fromDineInOrder) {
+      final savedAddress = AddressHelper.getAddressFromSharedPref();
+
+      if (savedAddress?.latitude != null && savedAddress?.longitude != null) {
+        _myLocation = ll.LatLng(
+          double.parse(savedAddress!.latitude!),
+          double.parse(savedAddress.longitude!),
+        );
+      }
+    }
+  }
+
+  Geographic _toGeographic(ll.LatLng point) {
+    return Geographic(
+      lon: point.longitude,
+      lat: point.latitude,
+    );
+  }
+
+  Future<void> _moveCamera(
+    ll.LatLng target, {
+    double zoom = 15,
+  }) async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    await controller.animateCamera(
+      center: _toGeographic(target),
+      zoom: zoom,
+    );
+  }
+
+  List<Layer> _buildMarkerLayers() {
+    final List<Layer> layers = [];
+
+    layers.add(
+      CircleLayer(
+        points: [
+          Feature<Point>(
+            geometry: Point(_toGeographic(_latLng)),
+          ),
+        ],
+        color: Theme.of(context).primaryColor,
+        radius: 9,
+        strokeColor: Colors.white,
+        strokeWidth: 3,
+      ),
+    );
+
+    if (!widget.fromDineInOrder && _myLocation != null) {
+      layers.add(
+        CircleLayer(
+          points: [
+            Feature<Point>(
+              geometry: Point(_toGeographic(_myLocation!)),
+            ),
+          ],
+          color: Colors.blue,
+          radius: 8,
+          strokeColor: Colors.white,
+          strokeWidth: 3,
+        ),
+      );
+    }
+
+    return layers;
+  }
+
+  Future<void> _setCurrentLocation() async {
+    AddressModel address =
+        await Get.find<LocationController>().getCurrentLocation(false);
+
+    if (address.latitude == null || address.longitude == null) {
+      return;
+    }
+
+    final currentLocation = ll.LatLng(
+      double.parse(address.latitude!),
+      double.parse(address.longitude!),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _myLocation = currentLocation;
+    });
+
+    await _moveCamera(
+      currentLocation,
+      zoom: GetPlatform.isWeb ? 7 : 15,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBarWidget(
-          title: widget.fromRestaurant || widget.fromOrder
-              ? widget.restaurantName!
-              : 'location'.tr),
+        title: widget.fromRestaurant || widget.fromOrder
+            ? widget.restaurantName!
+            : 'location'.tr,
+      ),
       endDrawer: const MenuDrawerWidget(),
       endDrawerEnableOpenDragGesture: false,
       body: Center(
         child: SizedBox(
           width: Dimensions.webMaxWidth,
-          child: Stack(children: [
-            GoogleMap(
-              initialCameraPosition: CameraPosition(target: _latLng, zoom: 17),
-              minMaxZoomPreference: const MinMaxZoomPreference(0, 21),
-              zoomGesturesEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              indoorViewEnabled: true,
-              markers: _markers,
-              onMapCreated: (controller) {
-                _mapController = controller;
-                _setMarker();
-              },
-              style: Get.isDarkMode
-                  ? Get.find<ThemeController>().darkMap
-                  : Get.find<ThemeController>().lightMap,
-            ),
-            Positioned(
-              left: Dimensions.paddingSizeLarge,
-              right: Dimensions.paddingSizeLarge,
-              bottom: Dimensions.paddingSizeLarge,
-              child: Column(
-                children: [
-                  widget.fromDineInOrder
-                      ? SizedBox()
-                      : Align(
-                          alignment: Alignment.centerRight,
-                          child: InkWell(
-                            onTap: () => _checkPermission(() async {
-                              AddressModel address =
-                                  await Get.find<LocationController>()
-                                      .getCurrentLocation(false,
-                                          mapController: _mapController);
-                              _setMarker(
-                                  address: address, fromCurrentLocation: true);
-                            }),
-                            child: Container(
-                              padding: const EdgeInsets.all(
-                                  Dimensions.paddingSizeSmall),
-                              decoration: BoxDecoration(
+          child: Stack(
+            children: [
+              MapLibreMap(
+                options: MapOptions(
+                  initStyle: _openFreeMapStyle,
+                  initCenter: _toGeographic(_latLng),
+                  initZoom: 17,
+                  minZoom: 0,
+                  maxZoom: 18,
+                ),
+                layers: _buildMarkerLayers(),
+                onMapCreated: (MapController controller) {
+                  _mapController = controller;
+
+                  if (mounted) {
+                    setState(() {
+                      _mapReady = true;
+                    });
+                  }
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _showInitialLocations();
+                  });
+                },
+              ),
+
+              Positioned(
+                left: Dimensions.paddingSizeLarge,
+                right: Dimensions.paddingSizeLarge,
+                bottom: Dimensions.paddingSizeLarge,
+                child: Column(
+                  children: [
+                    widget.fromDineInOrder
+                        ? const SizedBox()
+                        : Align(
+                            alignment: Alignment.centerRight,
+                            child: InkWell(
+                              onTap: () => _checkPermission(() async {
+                                await _setCurrentLocation();
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.all(
+                                  Dimensions.paddingSizeSmall,
+                                ),
+                                decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(50),
-                                  color: Colors.white),
-                              child: Icon(Icons.my_location_outlined,
+                                  color: Colors.white,
+                                ),
+                                child: Icon(
+                                  Icons.my_location_outlined,
                                   color: Theme.of(context).primaryColor,
-                                  size: 25),
+                                  size: 25,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                  const SizedBox(height: Dimensions.paddingSizeLarge),
-                  widget.restaurant != null
-                      ? RestaurantDetailsSheetWidget(
-                          restaurant: widget.restaurant!,
-                          isActive: true,
-                          fromOrder: true,
-                        )
-                      : InkWell(
-                          onTap: () {
-                            if (_mapController != null) {
-                              _mapController!.animateCamera(
-                                  CameraUpdate.newCameraPosition(CameraPosition(
-                                      target: _latLng, zoom: 17)));
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(
-                                Dimensions.paddingSizeSmall),
-                            decoration: BoxDecoration(
-                              borderRadius:
-                                  BorderRadius.circular(Dimensions.radiusSmall),
-                              color: Theme.of(context).cardColor,
-                              boxShadow: const [
-                                BoxShadow(
+
+                    const SizedBox(
+                      height: Dimensions.paddingSizeLarge,
+                    ),
+
+                    widget.restaurant != null
+                        ? RestaurantDetailsSheetWidget(
+                            restaurant: widget.restaurant!,
+                            isActive: true,
+                            fromOrder: true,
+                          )
+                        : InkWell(
+                            onTap: () {
+                              if (_mapReady) {
+                                _moveCamera(_latLng, zoom: 17);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(
+                                Dimensions.paddingSizeSmall,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  Dimensions.radiusSmall,
+                                ),
+                                color: Theme.of(context).cardColor,
+                                boxShadow: const [
+                                  BoxShadow(
                                     color: Colors.black12,
                                     spreadRadius: 1,
-                                    blurRadius: 5)
-                              ],
-                            ),
-                            child: widget.fromRestaurant
-                                ? Row(children: [
-                                    Expanded(
-                                      child: Text(widget.address.address ?? '',
-                                          style: robotoMedium,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis),
-                                    ),
-                                    const SizedBox(
-                                        width: Dimensions.paddingSizeDefault),
-                                    InkWell(
-                                      onTap: () async {
-                                        String url =
-                                            'https://www.google.com/maps/dir/?api=1&destination=${widget.address.latitude}'
-                                            ',${widget.address.longitude}&mode=d';
-                                        if (await canLaunchUrlString(url)) {
-                                          await launchUrlString(url,
-                                              mode: LaunchMode
-                                                  .externalApplication);
-                                        } else {
-                                          showCustomSnackBar(
-                                              'unable_to_launch_google_map'.tr);
-                                        }
-                                      },
-                                      child: const Icon(Icons.directions),
-                                    ),
-                                  ])
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(children: [
-                                        Icon(
-                                          widget.address.addressType == 'home'
-                                              ? Icons.home_outlined
-                                              : widget.address.addressType ==
-                                                      'office'
-                                                  ? Icons.work_outline
-                                                  : Icons.location_on,
-                                          size: 30,
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                        const SizedBox(width: 10),
+                                    blurRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: widget.fromRestaurant
+                                  ? Row(
+                                      children: [
                                         Expanded(
-                                          child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                    widget.address.addressType!
-                                                        .tr,
+                                          child: Text(
+                                            widget.address.address ?? '',
+                                            style: robotoMedium,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                          width:
+                                              Dimensions.paddingSizeDefault,
+                                        ),
+                                        InkWell(
+                                          onTap: () async {
+                                            final String url =
+                                                'https://www.google.com/maps/dir/?api=1&destination=${widget.address.latitude},${widget.address.longitude}&mode=d';
+
+                                            if (await canLaunchUrlString(url)) {
+                                              await launchUrlString(
+                                                url,
+                                                mode: LaunchMode
+                                                    .externalApplication,
+                                              );
+                                            } else {
+                                              showCustomSnackBar(
+                                                'unable_to_launch_google_map'.tr,
+                                              );
+                                            }
+                                          },
+                                          child:
+                                              const Icon(Icons.directions),
+                                        ),
+                                      ],
+                                    )
+                                  : Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              widget.address.addressType ==
+                                                      'home'
+                                                  ? Icons.home_outlined
+                                                  : widget.address
+                                                              .addressType ==
+                                                          'office'
+                                                      ? Icons.work_outline
+                                                      : Icons.location_on,
+                                              size: 30,
+                                              color: Theme.of(context)
+                                                  .primaryColor,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    widget.address
+                                                        .addressType!.tr,
                                                     style:
                                                         robotoRegular.copyWith(
                                                       fontSize: Dimensions
                                                           .fontSizeSmall,
                                                       color: Theme.of(context)
                                                           .disabledColor,
-                                                    )),
-                                                Text(widget.address.address!,
-                                                    style: robotoMedium),
-                                                (widget.address.road != null &&
-                                                        widget.address.road!
-                                                            .isNotEmpty)
-                                                    ? Text(
-                                                        '${'street_number'.tr}: ${widget.address.road}',
-                                                        style: robotoMedium)
-                                                    : const SizedBox.shrink(),
-                                                (widget.address.house != null &&
-                                                        widget.address.house!
-                                                            .isNotEmpty)
-                                                    ? Text(
-                                                        '${'house'.tr}: ${widget.address.house}',
-                                                        style: robotoMedium)
-                                                    : const SizedBox.shrink(),
-                                                (widget.address.floor != null &&
-                                                        widget.address.floor!
-                                                            .isNotEmpty)
-                                                    ? Text(
-                                                        '${'floor'.tr}: ${widget.address.floor}',
-                                                        style: robotoMedium)
-                                                    : const SizedBox.shrink(),
-                                              ]),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    widget.address.address!,
+                                                    style: robotoMedium,
+                                                  ),
+                                                  (widget.address.road !=
+                                                              null &&
+                                                          widget.address.road!
+                                                              .isNotEmpty)
+                                                      ? Text(
+                                                          '${'street_number'.tr}: ${widget.address.road}',
+                                                          style:
+                                                              robotoMedium,
+                                                        )
+                                                      : const SizedBox
+                                                          .shrink(),
+                                                  (widget.address.house !=
+                                                              null &&
+                                                          widget.address.house!
+                                                              .isNotEmpty)
+                                                      ? Text(
+                                                          '${'house'.tr}: ${widget.address.house}',
+                                                          style:
+                                                              robotoMedium,
+                                                        )
+                                                      : const SizedBox
+                                                          .shrink(),
+                                                  (widget.address.floor !=
+                                                              null &&
+                                                          widget.address.floor!
+                                                              .isNotEmpty)
+                                                      ? Text(
+                                                          '${'floor'.tr}: ${widget.address.floor}',
+                                                          style:
+                                                              robotoMedium,
+                                                        )
+                                                      : const SizedBox
+                                                          .shrink(),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ]),
-                                      Text(
+                                        Text(
                                           '- ${widget.address.contactPersonName}',
                                           style: robotoMedium.copyWith(
-                                            color:
-                                                Theme.of(context).primaryColor,
-                                            fontSize: Dimensions.fontSizeLarge,
-                                          )),
-                                      Text(
+                                            color: Theme.of(context)
+                                                .primaryColor,
+                                            fontSize:
+                                                Dimensions.fontSizeLarge,
+                                          ),
+                                        ),
+                                        Text(
                                           '- ${widget.address.contactPersonNumber}',
-                                          style: robotoRegular),
-                                    ],
-                                  ),
+                                          style: robotoRegular,
+                                        ),
+                                      ],
+                                    ),
+                            ),
                           ),
-                        ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _setMarker(
-      {AddressModel? address, bool fromCurrentLocation = false}) async {
-    await _initializeBitmapDescriptors();
-    final BitmapDescriptor destinationImageData = _cachedDestinationMarker!;
-    final BitmapDescriptor myLocationMarkerIcon = _cachedMyLocationMarker!;
+  Future<void> _showInitialLocations() async {
+    if (_mapController == null) return;
 
-    ///Marker set
-
-    _markers = <Marker>{};
-
-    setState(() {
-      _markers.add(Marker(
-        markerId: const MarkerId('marker'),
-        position: _latLng,
-        icon: destinationImageData,
-      ));
-    });
-
-    if (!widget.fromDineInOrder) {
-      if (address == null) {
-        setState(() {
-          _markers.add(Marker(
-            markerId: const MarkerId('id--1'),
-            visible: true,
-            draggable: false,
-            zIndex: 2,
-            flat: true,
-            anchor: const Offset(0.5, 0.5),
-            position: LatLng(
-              double.parse(AddressHelper.getAddressFromSharedPref()!.latitude!),
-              double.parse(
-                  AddressHelper.getAddressFromSharedPref()!.longitude!),
-            ),
-            icon: myLocationMarkerIcon,
-          ));
-        });
-      }
+    // When viewing a restaurant, always open directly on the restaurant pin.
+    if (widget.fromRestaurant || widget.restaurant != null) {
+      await _moveCamera(_latLng, zoom: 17);
+      return;
     }
 
-    // Animate to coordinate
-    LatLngBounds? bounds;
-    if (_mapController != null) {
-      if (address != null) {
-        if (double.parse(address.latitude!) <
-            double.parse(widget.address.latitude!)) {
-          bounds = LatLngBounds(
-            southwest: LatLng(double.parse(address.latitude!),
-                double.parse(address.longitude!)),
-            northeast: LatLng(double.parse(widget.address.latitude!),
-                double.parse(widget.address.longitude!)),
-          );
-        } else {
-          bounds = LatLngBounds(
-            southwest: LatLng(double.parse(widget.address.latitude!),
-                double.parse(widget.address.longitude!)),
-            northeast: LatLng(double.parse(address.latitude!),
-                double.parse(address.longitude!)),
-          );
-        }
-      } else {
-        bounds = LatLngBounds(
-          southwest: LatLng(
-              double.parse(AddressHelper.getAddressFromSharedPref()!.latitude!),
-              double.parse(
-                  AddressHelper.getAddressFromSharedPref()!.longitude!)),
-          northeast: LatLng(double.parse(widget.address.latitude!),
-              double.parse(widget.address.longitude!)),
-        );
-      }
+    if (_myLocation == null) {
+      await _moveCamera(_latLng, zoom: 17);
+      return;
     }
 
-    LatLng centerBounds = LatLng(
-      (bounds!.northeast.latitude + bounds.southwest.latitude) / 2,
-      (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+    final center = ll.LatLng(
+      (_latLng.latitude + _myLocation!.latitude) / 2,
+      (_latLng.longitude + _myLocation!.longitude) / 2,
     );
 
-    if (fromCurrentLocation && address != null) {
-      LatLng currentLocation = LatLng(
-        double.parse(address.latitude!),
-        double.parse(address.longitude!),
-      );
-      _mapController!.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: currentLocation, zoom: GetPlatform.isWeb ? 7 : 15)));
-    }
-
-    if (!fromCurrentLocation) {
-      _mapController!.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: centerBounds, zoom: GetPlatform.isWeb ? 7 : 15)));
-      if (!ResponsiveHelper.isWeb()) {
-        zoomToFit(_mapController, bounds, centerBounds, padding: 3.5);
-      }
-    }
-
-    ///current location marker set
-    if (address != null) {
-      _markers.add(Marker(
-        markerId: const MarkerId('id--2'),
-        visible: true,
-        draggable: false,
-        zIndex: 2,
-        flat: true,
-        anchor: const Offset(0.5, 0.5),
-        position: LatLng(
-          double.parse(address.latitude!),
-          double.parse(address.longitude!),
-        ),
-        icon: myLocationMarkerIcon,
-      ));
-      setState(() {});
-    }
-
-    if (fromCurrentLocation) {
-      setState(() {});
-    }
-  }
-
-  Future<Uint8List> convertAssetToUnit8List(String imagePath,
-      {int width = 50}) async {
-    ByteData data = await rootBundle.load(imagePath);
-    Codec codec = await instantiateImageCodec(data.buffer.asUint8List(),
-        targetWidth: width);
-    FrameInfo fi = await codec.getNextFrame();
-    return (await fi.image.toByteData(format: ImageByteFormat.png))!
-        .buffer
-        .asUint8List();
-  }
-
-  Future<void> zoomToFit(GoogleMapController? controller, LatLngBounds? bounds,
-      LatLng centerBounds,
-      {double padding = 0.5}) async {
-    bool keepZoomingOut = true;
-
-    while (keepZoomingOut) {
-      final LatLngBounds screenBounds = await controller!.getVisibleRegion();
-      if (fits(bounds!, screenBounds)) {
-        keepZoomingOut = false;
-        final double zoomLevel = await controller.getZoomLevel() - padding;
-
-        await controller
-            .moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: centerBounds,
-          zoom: zoomLevel,
-        )));
-        break;
-      } else {
-        // Zooming out by 0.1 zoom level per iteration
-        final double zoomLevel = await controller.getZoomLevel() - 0.1;
-        await controller
-            .moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: centerBounds,
-          zoom: zoomLevel,
-        )));
-      }
-    }
-  }
-
-  bool fits(LatLngBounds fitBounds, LatLngBounds screenBounds) {
-    final bool northEastLatitudeCheck =
-        screenBounds.northeast.latitude >= fitBounds.northeast.latitude;
-    final bool northEastLongitudeCheck =
-        screenBounds.northeast.longitude >= fitBounds.northeast.longitude;
-
-    final bool southWestLatitudeCheck =
-        screenBounds.southwest.latitude <= fitBounds.southwest.latitude;
-    final bool southWestLongitudeCheck =
-        screenBounds.southwest.longitude <= fitBounds.southwest.longitude;
-
-    return northEastLatitudeCheck &&
-        northEastLongitudeCheck &&
-        southWestLatitudeCheck &&
-        southWestLongitudeCheck;
+    await _moveCamera(
+      center,
+      zoom: GetPlatform.isWeb ? 7 : 15,
+    );
   }
 
   void _checkPermission(Function onTap) async {
     LocationPermission permission = await Geolocator.checkPermission();
+
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
+
     if (permission == LocationPermission.denied) {
       showCustomSnackBar('you_have_to_allow'.tr);
     } else if (permission == LocationPermission.deniedForever) {
@@ -472,3 +438,7 @@ class MapScreenState extends State<MapScreen> {
     }
   }
 }
+
+
+
+

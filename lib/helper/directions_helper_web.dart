@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:js' as js;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 /// Web-specific implementation using Google Maps JavaScript API
 /// This avoids CORS issues by using the DirectionsService from the loaded JS API
@@ -154,3 +154,4 @@ class DirectionsHelperWeb {
     }
   }
 }
+

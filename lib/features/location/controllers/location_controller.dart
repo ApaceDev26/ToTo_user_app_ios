@@ -12,7 +12,7 @@ import 'package:toto_user/helper/auth_helper.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:toto_user/helper/route_helper.dart';
 
 class LocationController extends GetxController implements GetxService {
@@ -53,16 +53,13 @@ class LocationController extends GetxController implements GetxService {
   bool _buttonDisabled = true;
   bool get buttonDisabled => _buttonDisabled;
 
-  GoogleMapController? _mapController;
-  GoogleMapController? get mapController => _mapController;
-
   List<PredictionModel> _predictionList = [];
   List<PredictionModel> get predictionList => _predictionList;
 
   bool _updateAddressData = true;
   bool _changeAddress = true;
 
-  Future<AddressModel> getCurrentLocation(bool fromAddress, {GoogleMapController? mapController, LatLng? defaultLatLng, bool notify = true, bool showSnackBar = false}) async {
+  Future<AddressModel> getCurrentLocation(bool fromAddress, {LatLng? defaultLatLng, bool notify = true, bool showSnackBar = false}) async {
     _loading = true;
     if(notify) {
       update();
@@ -77,7 +74,6 @@ class LocationController extends GetxController implements GetxService {
     );
     fromAddress ? _position = myPosition : _pickPosition = myPosition;
 
-    locationServiceInterface.handleMapAnimation(mapController, myPosition);
     String addressFromGeocode = await getAddressFromGeocode(LatLng(myPosition.latitude, myPosition.longitude));
     fromAddress ? _address = addressFromGeocode : _pickAddress = addressFromGeocode;
     ZoneResponseModel responseModel = await getZone(myPosition.latitude.toString(), myPosition.longitude.toString(), true, showSnackBar: showSnackBar);
@@ -126,25 +122,25 @@ class LocationController extends GetxController implements GetxService {
     _isLoading = false;
   }
 
-  void updatePosition(CameraPosition? position, bool fromAddress) async {
+  void updatePosition(LatLng? position, bool fromAddress) async {
     if(_updateAddressData) {
       _loading = true;
       update();
       if (fromAddress) {
         _position = Position(
-          latitude: position!.target.latitude, longitude: position.target.longitude, timestamp: DateTime.now(),
+          latitude: position!.latitude, longitude: position.longitude, timestamp: DateTime.now(),
           heading: 1, accuracy: 1, altitude: 1, speedAccuracy: 1, speed: 1, altitudeAccuracy: 1, headingAccuracy: 1,
         );
       } else {
         _pickPosition = Position(
-          latitude: position!.target.latitude, longitude: position.target.longitude, timestamp: DateTime.now(),
+          latitude: position!.latitude, longitude: position.longitude, timestamp: DateTime.now(),
           heading: 1, accuracy: 1, altitude: 1, speedAccuracy: 1, speed: 1, altitudeAccuracy: 1, headingAccuracy: 1,
         );
       }
-      ZoneResponseModel responseModel = await getZone(position.target.latitude.toString(), position.target.longitude.toString(), true);
+      ZoneResponseModel responseModel = await getZone(position.latitude.toString(), position.longitude.toString(), true);
       _buttonDisabled = !responseModel.isSuccess;
       if (_changeAddress) {
-        String addressFromGeocode = await getAddressFromGeocode(LatLng(position.target.latitude, position.target.longitude));
+        String addressFromGeocode = await getAddressFromGeocode(LatLng(position.latitude, position.longitude));
         fromAddress ? _address = addressFromGeocode : _pickAddress = addressFromGeocode;
       } else {
         _changeAddress = true;
@@ -202,7 +198,7 @@ class LocationController extends GetxController implements GetxService {
     locationServiceInterface.handleRoute(fromSignUp, route, canRoute);
   }
 
-  Future<Position> setLocation(String placeID, String? address, GoogleMapController? mapController) async {
+  Future<Position> setLocation(String placeID, String? address) async {
     _loading = true;
     update();
 
@@ -214,10 +210,6 @@ class LocationController extends GetxController implements GetxService {
     );
     _pickAddress = address;
     _changeAddress = false;
-
-    if(mapController != null) {
-      mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: latLng, zoom: 16)));
-    }
     _loading = false;
     update();
     return _pickPosition;
@@ -250,10 +242,6 @@ class LocationController extends GetxController implements GetxService {
     _pickAddress = _address;
   }
 
-  void setMapController(GoogleMapController mapController) {
-    _mapController = mapController;
-  }
-
   Future<String> getAddressFromGeocode(LatLng latLng) async {
     return await locationServiceInterface.getAddressFromGeocode(latLng);
   }
@@ -279,3 +267,5 @@ class LocationController extends GetxController implements GetxService {
   }
 
 }
+
+

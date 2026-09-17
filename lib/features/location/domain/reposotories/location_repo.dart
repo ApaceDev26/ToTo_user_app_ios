@@ -6,7 +6,7 @@ import 'package:toto_user/util/app_constants.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/response/response.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class LocationRepo implements LocationRepoInterface {
   final ApiClient apiClient;
@@ -106,3 +106,4 @@ class LocationRepo implements LocationRepoInterface {
     throw UnimplementedError();
   }
 }
+

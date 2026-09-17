@@ -228,9 +228,8 @@ class _StoreTile extends StatelessWidget {
                                         ? Icons.favorite_rounded
                                         : Icons.favorite_border_rounded,
                                     size: 16,
-                                    color: wished
-                                        ? colors.warm
-                                        : colors.inkMuted,
+                                    color:
+                                        wished ? colors.warm : colors.inkMuted,
                                   ),
                                 ),
                               ),

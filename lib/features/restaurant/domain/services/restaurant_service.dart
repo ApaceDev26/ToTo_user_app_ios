@@ -1,4 +1,4 @@
-import 'package:toto_user/common/enums/data_source_enum.dart';
+﻿import 'package:toto_user/common/enums/data_source_enum.dart';
 import 'package:toto_user/common/models/product_model.dart';
 import 'package:toto_user/common/models/restaurant_model.dart';
 import 'package:toto_user/features/address/domain/models/address_model.dart';
@@ -10,8 +10,9 @@ import 'package:toto_user/features/restaurant/domain/services/restaurant_service
 import 'package:toto_user/helper/address_helper.dart';
 import 'package:toto_user/helper/date_converter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:toto_user/util/app_constants.dart';
 
 class RestaurantService implements RestaurantServiceInterface {
@@ -21,6 +22,12 @@ class RestaurantService implements RestaurantServiceInterface {
   @override
   double getRestaurantDistanceFromUser(LatLng restaurantLatLng) {
     final address = AddressHelper.getAddressFromSharedPref();
+
+    debugPrint(
+      'DISTANCE DEBUG -> USER: ${address?.latitude}, ${address?.longitude} '
+      'RESTAURANT: ${restaurantLatLng.latitude}, ${restaurantLatLng.longitude}',
+    );
+
     if (address?.latitude == null || address?.longitude == null) {
       return 0;
     }
@@ -37,6 +44,12 @@ class RestaurantService implements RestaurantServiceInterface {
   @override
   Future<double?> getRoadDistanceFromUser(LatLng restaurantLatLng) async {
     final address = AddressHelper.getAddressFromSharedPref();
+
+    debugPrint(
+      'DISTANCE DEBUG -> USER: ${address?.latitude}, ${address?.longitude} '
+      'RESTAURANT: ${restaurantLatLng.latitude}, ${restaurantLatLng.longitude}',
+    );
+
     if (address?.latitude == null || address?.longitude == null) {
       return null;
     }
@@ -52,6 +65,10 @@ class RestaurantService implements RestaurantServiceInterface {
         restaurantLatLng,
       );
 
+      debugPrint(
+        'ROAD DISTANCE API -> STATUS: ${response.statusCode}, BODY: ${response.body}',
+      );
+
       if (response.statusCode == 200 &&
           response.body is Map &&
           response.body['distanceMeters'] != null) {
@@ -59,7 +76,8 @@ class RestaurantService implements RestaurantServiceInterface {
       }
     } catch (_) {}
 
-    return getRestaurantDistanceFromUser(restaurantLatLng);
+    // Road distance only. Never fall back to straight-line/air distance.
+    return null;
   }
 
   @override
@@ -272,3 +290,8 @@ class RestaurantService implements RestaurantServiceInterface {
     return false;
   }
 }
+
+
+
+
+

@@ -268,90 +268,89 @@ class DashboardScreenState extends State<DashboardScreen>
       },
       child: Scaffold(
         key: _scaffoldKey,
-        // Overlay nav in body Stack — Scaffold.bottomNavigationBar always paints
+        // Overlay nav in body Stack â€” Scaffold.bottomNavigationBar always paints
         // an opaque canvas strip that kills true transparency.
         bottomNavigationBar: null,
         body: Stack(
           fit: StackFit.expand,
           children: [
             GetBuilder<OrderController>(builder: (orderController) {
-          // Check for delivered orders whenever OrderController updates
-          // Use flags to prevent multiple simultaneous checks
-          if (!_isCheckingDeliveredOrder &&
-              !_isCheckingRefundedOrder &&
-              !_isAnyPopupShowing &&
-              _isLogin &&
-              _pageIndex == 0) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted &&
-                  !_isCheckingDeliveredOrder &&
+              // Check for delivered orders whenever OrderController updates
+              // Use flags to prevent multiple simultaneous checks
+              if (!_isCheckingDeliveredOrder &&
                   !_isCheckingRefundedOrder &&
-                  !_isAnyPopupShowing) {
-                _checkForDeliveredOrder();
-                _checkForRefundedOrder();
+                  !_isAnyPopupShowing &&
+                  _isLogin &&
+                  _pageIndex == 0) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted &&
+                      !_isCheckingDeliveredOrder &&
+                      !_isCheckingRefundedOrder &&
+                      !_isAnyPopupShowing) {
+                    _checkForDeliveredOrder();
+                    _checkForRefundedOrder();
+                  }
+                });
               }
-            });
-          }
 
-          List<OrderModel> runningOrder =
-              orderController.runningOrderList != null
-                  ? orderController.runningOrderList!
-                  : [];
+              List<OrderModel> runningOrder =
+                  orderController.runningOrderList != null
+                      ? orderController.runningOrderList!
+                      : [];
 
-          List<OrderModel> reversOrder = List.from(runningOrder.reversed);
+              List<OrderModel> reversOrder = List.from(runningOrder.reversed);
 
-          final showRunning = _isLogin &&
-              orderController.runningOrderList != null &&
-              orderController.runningOrderList!.isNotEmpty &&
-              orderController.showBottomSheet &&
-              _pageIndex == 0;
+              final showRunning = _isLogin &&
+                  orderController.runningOrderList != null &&
+                  orderController.runningOrderList!.isNotEmpty &&
+                  orderController.showBottomSheet &&
+                  _pageIndex == 0;
 
-          final hasFloatingNav = !ResponsiveHelper.isDesktop(context);
-          final orderBottom = hasFloatingNav
-              ? runningOrderNavClearance(context)
-              : 16.0;
+              final hasFloatingNav = !ResponsiveHelper.isDesktop(context);
+              final orderBottom =
+                  hasFloatingNav ? runningOrderNavClearance(context) : 16.0;
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              PageView.builder(
-                controller: _pageController,
-                itemCount: _screens.length,
-                physics: const NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return _screens[index];
-                },
-              ),
-              if (showRunning)
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: orderBottom,
-                  child: RunningOrderViewWidget(
-                    reversOrder: reversOrder,
-                    isExpanded: _isBottomSheetExpanded,
-                    onMoreClick: () {
-                      orderController.setBottomSheetExpanded(true);
-                      setState(() => _isBottomSheetExpanded = true);
-                      if (orderController.showOneOrder) {
-                        orderController.showOrders();
-                      }
-                    },
-                    onCollapse: () {
-                      orderController.setBottomSheetExpanded(false);
-                      setState(() => _isBottomSheetExpanded = false);
-                      if (!orderController.showOneOrder) {
-                        orderController.showOrders();
-                      }
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: _screens.length,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      return _screens[index];
                     },
                   ),
-                ),
-            ],
-          );
-        }),
+                  if (showRunning)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: orderBottom,
+                      child: RunningOrderViewWidget(
+                        reversOrder: reversOrder,
+                        isExpanded: _isBottomSheetExpanded,
+                        onMoreClick: () {
+                          orderController.setBottomSheetExpanded(true);
+                          setState(() => _isBottomSheetExpanded = true);
+                          if (orderController.showOneOrder) {
+                            orderController.showOrders();
+                          }
+                        },
+                        onCollapse: () {
+                          orderController.setBottomSheetExpanded(false);
+                          setState(() => _isBottomSheetExpanded = false);
+                          if (!orderController.showOneOrder) {
+                            orderController.showOrders();
+                          }
+                        },
+                      ),
+                    ),
+                ],
+              );
+            }),
             if (!ResponsiveHelper.isDesktop(context))
               Positioned(
-                // Only the island occupies space — side/bottom gaps stay clear
+                // Only the island occupies space â€” side/bottom gaps stay clear
                 // so home content shows through around the solid pill.
                 left: 16,
                 right: 16,

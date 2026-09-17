@@ -1,12 +1,9 @@
 import 'package:toto_user/common/enums/data_source_enum.dart';
 import 'package:toto_user/common/models/product_model.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
-import 'package:toto_user/features/address/domain/models/address_model.dart';
 import 'package:toto_user/features/category/controllers/category_controller.dart';
 import 'package:toto_user/features/checkout/controllers/checkout_controller.dart';
 import 'package:toto_user/features/language/controllers/localization_controller.dart';
-import 'package:toto_user/features/location/controllers/location_controller.dart';
-import 'package:toto_user/features/location/domain/models/zone_response_model.dart';
 import 'package:toto_user/features/restaurant/domain/models/cart_suggested_item_model.dart';
 import 'package:toto_user/features/restaurant/domain/models/recommended_product_model.dart';
 import 'package:toto_user/common/models/restaurant_model.dart';
@@ -14,9 +11,8 @@ import 'package:toto_user/features/category/domain/models/category_model.dart';
 import 'package:toto_user/features/restaurant/domain/services/restaurant_service_interface.dart';
 import 'package:toto_user/helper/address_helper.dart';
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class RestaurantController extends GetxController implements GetxService {
   final RestaurantServiceInterface restaurantServiceInterface;
@@ -126,32 +122,100 @@ class RestaurantController extends GetxController implements GetxService {
   }
 
   final Map<String, double> _roadDistanceCache = {};
-  final Set<String> _roadDistanceFetching = {};
+  final Map<String, DateTime> _roadDistanceCacheTime = {};
+  final Map<String, Future<double?>> _roadDistanceRequests = {};
 
-  String _roadDistanceCacheKey(LatLng restaurantLatLng) {
+  static const Duration _roadDistanceCacheDuration =
+      Duration(minutes: 10);
+
+  String _restaurantDistanceKey(LatLng restaurantLatLng) {
     final address = AddressHelper.getAddressFromSharedPref();
-    return '${restaurantLatLng.latitude.toStringAsFixed(5)}_'
-        '${restaurantLatLng.longitude.toStringAsFixed(5)}_'
-        '${address?.latitude}_${address?.longitude}';
+
+    final userLat = double.tryParse(address?.latitude ?? '');
+    final userLng = double.tryParse(address?.longitude ?? '');
+
+    return '${userLat?.toStringAsFixed(5) ?? '0'}_'
+        '${userLng?.toStringAsFixed(5) ?? '0'}_'
+        '${restaurantLatLng.latitude.toStringAsFixed(5)}_'
+        '${restaurantLatLng.longitude.toStringAsFixed(5)}';
   }
 
+
   bool hasRoadDistance(LatLng restaurantLatLng) {
-    return _roadDistanceCache.containsKey(_roadDistanceCacheKey(restaurantLatLng));
+    return _roadDistanceCache.containsKey(
+      _restaurantDistanceKey(restaurantLatLng),
+    );
   }
 
   double? getCachedRoadDistance(LatLng restaurantLatLng) {
-    return _roadDistanceCache[_roadDistanceCacheKey(restaurantLatLng)];
+    final key = _restaurantDistanceKey(restaurantLatLng);
+    final cachedAt = _roadDistanceCacheTime[key];
+
+    if (cachedAt != null &&
+        DateTime.now().difference(cachedAt) <
+            _roadDistanceCacheDuration) {
+      return _roadDistanceCache[key];
+    }
+
+    // Keep the last valid road distance visible even after cache expiry.
+    // loadRoadDistance() can still refresh it from the road-distance API.
+    return _roadDistanceCache[key];
   }
 
-  double getRestaurantDistance(LatLng restaurantLatLng) {
-    final key = _roadDistanceCacheKey(restaurantLatLng);
+  Future<double?> loadRoadDistance(
+    LatLng restaurantLatLng, {
+    bool notify = true,
+  }) async {
+    final key = _restaurantDistanceKey(restaurantLatLng);
+
+    final cachedAt = _roadDistanceCacheTime[key];
     final cached = _roadDistanceCache[key];
-    if (cached != null) {
+
+    if (cached != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _roadDistanceCacheDuration) {
       return cached;
     }
 
-    _prefetchRoadDistance(restaurantLatLng, key);
-    return 0;
+    final existingRequest = _roadDistanceRequests[key];
+    if (existingRequest != null) {
+      return existingRequest;
+    }
+
+    final request = restaurantServiceInterface
+        .getRoadDistanceFromUser(restaurantLatLng);
+
+    _roadDistanceRequests[key] = request;
+
+    try {
+      final distance = await request;
+
+      if (distance != null && distance > 0) {
+        _roadDistanceCache[key] = distance;
+        _roadDistanceCacheTime[key] = DateTime.now();
+
+        debugPrint(
+          'ROAD CACHE SAVE -> KEY: $key, DISTANCE: $distance',
+        );
+
+        if (notify) {
+          update();
+        }
+
+        return distance;
+      }
+
+      // Road route distance only.
+      // Do not use straight-line distance as fallback.
+      return null;
+    } finally {
+      _roadDistanceRequests.remove(key);
+    }
+  }
+
+  double getRestaurantDistance(LatLng restaurantLatLng) {
+    final distance = getCachedRoadDistance(restaurantLatLng);
+    return distance ?? 0;
   }
 
   String formatRestaurantDistance(
@@ -159,35 +223,18 @@ class RestaurantController extends GetxController implements GetxService {
     int fractionDigits = 1,
     double maxKm = 100,
   }) {
-    final key = _roadDistanceCacheKey(restaurantLatLng);
-    final cached = _roadDistanceCache[key];
-    if (cached == null) {
-      _prefetchRoadDistance(restaurantLatLng, key);
+    final distance = getRestaurantDistance(restaurantLatLng);
+
+    if (distance <= 0) {
       return '-- ${'km'.tr}';
     }
 
-    final value = cached > maxKm ? '$maxKm+' : cached.toStringAsFixed(fractionDigits);
+    final value = distance > maxKm
+        ? '$maxKm+'
+        : distance.toStringAsFixed(fractionDigits);
+
     return '$value ${'km'.tr}';
   }
-
-  Future<void> _prefetchRoadDistance(LatLng restaurantLatLng, String key) async {
-    if (_roadDistanceFetching.contains(key) || _roadDistanceCache.containsKey(key)) {
-      return;
-    }
-
-    _roadDistanceFetching.add(key);
-    try {
-      final distance =
-          await restaurantServiceInterface.getRoadDistanceFromUser(restaurantLatLng);
-      if (distance != null && distance >= 0) {
-        _roadDistanceCache[key] = distance;
-        update();
-      }
-    } finally {
-      _roadDistanceFetching.remove(key);
-    }
-  }
-
   String filteringUrl(String slug) {
     return restaurantServiceInterface.filterRestaurantLinkUrl(
         slug, _restaurant?.id, _restaurant?.zoneId);
@@ -482,35 +529,8 @@ class RestaurantController extends GetxController implements GetxService {
         );
       }
     }
-    if (slug.isNotEmpty) {
-      await _setStoreAddressToUserAddress(LatLng(
-          double.parse(_restaurant!.latitude!),
-          double.parse(_restaurant!.longitude!)));
-    }
-  }
-
-  Future<void> _setStoreAddressToUserAddress(LatLng restaurantAddress) async {
-    Position storePosition = Position(
-      latitude: restaurantAddress.latitude,
-      longitude: restaurantAddress.longitude,
-      timestamp: DateTime.now(),
-      accuracy: 1,
-      altitude: 1,
-      heading: 1,
-      speed: 1,
-      speedAccuracy: 1,
-      altitudeAccuracy: 1,
-      headingAccuracy: 1,
-    );
-    String addressFromGeocode = await Get.find<LocationController>()
-        .getAddressFromGeocode(
-            LatLng(restaurantAddress.latitude, restaurantAddress.longitude));
-    ZoneResponseModel responseModel = await Get.find<LocationController>()
-        .getZone(storePosition.latitude.toString(),
-            storePosition.longitude.toString(), true);
-    AddressModel addressModel = restaurantServiceInterface.prepareAddressModel(
-        storePosition, responseModel, addressFromGeocode);
-    await AddressHelper.saveAddressInSharedPref(addressModel);
+    // Do NOT overwrite the user's saved location with the restaurant location.
+    // The user's selected address must remain unchanged.
   }
 
   void makeEmptyRestaurant({bool willUpdate = true}) {
@@ -712,3 +732,17 @@ class RestaurantController extends GetxController implements GetxService {
       ? restaurant.discount!.discountType
       : 'percent';
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

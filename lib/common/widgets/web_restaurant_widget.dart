@@ -1,4 +1,4 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:toto_user/common/widgets/custom_image_widget.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:toto_user/common/widgets/hover_widgets/on_hover_widget.dart';
@@ -301,3 +301,4 @@ class WebRestaurantShimmer extends StatelessWidget {
     );
   }
 }
+

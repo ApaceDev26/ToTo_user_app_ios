@@ -7,7 +7,7 @@ import 'package:toto_user/features/checkout/domain/models/place_order_body_model
 import 'package:toto_user/features/checkout/domain/repositories/checkout_repository_interface.dart';
 import 'package:toto_user/util/app_constants.dart';
 import 'package:get/get_connect.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class CheckoutRepository implements CheckoutRepositoryInterface {
   final ApiClient apiClient;

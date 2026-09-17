@@ -205,6 +205,7 @@ class PopularRestaurantsViewWidget extends StatelessWidget {
                                       padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault),
                                       child: Center(
                                         child: RestaurantDistanceText(
+                                          key: ValueKey('restaurant_distance_${restaurantList[index].id}_${restaurantList[index].latitude}_${restaurantList[index].longitude}'),
                                           latitude: restaurantList[index].latitude!,
                                           longitude: restaurantList[index].longitude!,
                                           fractionDigits: 2,

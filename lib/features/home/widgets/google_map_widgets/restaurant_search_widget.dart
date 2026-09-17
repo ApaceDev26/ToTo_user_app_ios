@@ -1,19 +1,14 @@
-import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:toto_user/common/models/restaurant_model.dart';
 import 'package:toto_user/features/restaurant/controllers/restaurant_controller.dart';
 import 'package:toto_user/util/dimensions.dart';
 import 'package:toto_user/util/styles.dart';
 
 class RestaurantSearchWidget extends StatefulWidget {
-  final GoogleMapController? mapController;
-  final CustomInfoWindowController customInfoWindowController;
   final List<Restaurant>? restaurantList;
   final Function(int) callBack;
-  const RestaurantSearchWidget({super.key, required this.mapController, required this.restaurantList,
-    required this.customInfoWindowController, required this.callBack});
+  const RestaurantSearchWidget({super.key, required this.restaurantList, required this.callBack});
 
   @override
   State<RestaurantSearchWidget> createState() => _RestaurantSearchWidgetState();

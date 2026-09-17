@@ -110,7 +110,7 @@ class RestaurantsCardWidget extends StatelessWidget {
                           ),
                           isAvailable
                               ? const SizedBox()
-                              : const NotAvailableWidget(isRestaurant: true),
+                              : const NotAvailableWidget(isRestaurant: true, fontSize: 11),
                         ],
                       ),
                       const SizedBox(width: Dimensions.paddingSizeSmall),

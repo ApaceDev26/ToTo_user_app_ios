@@ -16,7 +16,7 @@ import 'package:toto_user/common/widgets/custom_text_field_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 class DeliverySection extends StatelessWidget {
   final CheckoutController checkoutController;
@@ -97,7 +97,7 @@ class DeliverySection extends StatelessWidget {
                   }
                 } else if(value == -2) {
                   _checkPermission(() async {
-                    addressModel = await locationController.getCurrentLocation(true, mapController: null, showSnackBar: true);
+                    addressModel = await locationController.getCurrentLocation(true, showSnackBar: true);
 
                     if(addressModel.zoneIds!.isNotEmpty) {
 
@@ -231,3 +231,6 @@ class DeliverySection extends StatelessWidget {
     }
   }
 }
+
+
+

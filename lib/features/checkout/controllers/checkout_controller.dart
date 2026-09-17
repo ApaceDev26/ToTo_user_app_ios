@@ -31,7 +31,7 @@ import 'package:toto_user/common/widgets/custom_dropdown_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:universal_html/html.dart' as html;
 
 class CheckoutController extends GetxController implements GetxService {
@@ -110,6 +110,12 @@ class CheckoutController extends GetxController implements GetxService {
 
   double? _distance;
   double? get distance => _distance;
+
+  // Cache route distance results to avoid repeated Google Routes API calls.
+  final Map<String, double?> _distanceCache = {};
+  final Map<String, DateTime> _distanceCacheTime = {};
+  final Map<String, Future<double?>> _distanceInFlight = {};
+  static const Duration _distanceCacheDuration = Duration(minutes: 10);
 
   double? _extraCharge;
   double? get extraCharge => _extraCharge;
@@ -617,19 +623,71 @@ class CheckoutController extends GetxController implements GetxService {
     }
   }
 
-  Future<double?> getDistanceInKM(LatLng originLatLng, LatLng destinationLatLng, {bool isDuration = false, bool isRiding = false, bool fromDashboard = false}) async {
+  Future<double?> getDistanceInKM(
+    LatLng originLatLng,
+    LatLng destinationLatLng, {
+    bool isDuration = false,
+    bool isRiding = false,
+    bool fromDashboard = false,
+  }) async {
+    // Round coordinates so tiny GPS changes do not create unnecessary API calls.
+    final String cacheKey =
+        '${originLatLng.latitude.toStringAsFixed(4)}_'
+        '${originLatLng.longitude.toStringAsFixed(4)}_'
+        '${destinationLatLng.latitude.toStringAsFixed(4)}_'
+        '${destinationLatLng.longitude.toStringAsFixed(4)}_'
+        '${isDuration ? 'duration' : 'distance'}';
+
+    final DateTime? cachedAt = _distanceCacheTime[cacheKey];
+
+    if (_distanceCache.containsKey(cacheKey) &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _distanceCacheDuration) {
+
+      _distance = _distanceCache[cacheKey];
+
+      if (!fromDashboard) {
+        await getExtraCharge(_distance);
+      }
+
+      return _distance;
+    }
+
+    Future<double?>? request = _distanceInFlight[cacheKey];
+
+    if (request == null) {
+      request = checkoutServiceInterface.getDistanceInKM(
+        originLatLng,
+        destinationLatLng,
+        isDuration: isDuration,
+      );
+      _distanceInFlight[cacheKey] = request;
+    }
+
     _isDistanceLoading = true;
     update();
-    _distance = await checkoutServiceInterface.getDistanceInKM(originLatLng, destinationLatLng, isDuration: isDuration);
 
-    if(!fromDashboard) {
-      await getExtraCharge(_distance);
+    try {
+      _distance = await request;
+
+      if (_distance != null) {
+        _distanceCache[cacheKey] = _distance;
+        _distanceCacheTime[cacheKey] = DateTime.now();
+      }
+
+      if (!fromDashboard) {
+        await getExtraCharge(_distance);
+      }
+
+      return _distance;
+    } finally {
+      if (identical(_distanceInFlight[cacheKey], request)) {
+        _distanceInFlight.remove(cacheKey);
+      }
+      _isDistanceLoading = false;
+      update();
     }
-    _isDistanceLoading = false;
-    update();
-    return _distance;
   }
-
   Future<String> placeOrder(PlaceOrderBodyModel placeOrderBody, int? zoneID, double amount, double? maximumCodOrderAmount, bool fromCart,
       bool isCashOnDeliveryActive, {bool isOfflinePay = false}) async {
     _isLoading = true;
@@ -782,3 +840,5 @@ class CheckoutController extends GetxController implements GetxService {
   }
 
 }
+
+

@@ -5,7 +5,7 @@ import 'package:toto_user/design_system/app_durations.dart';
 import 'package:toto_user/design_system/app_radius.dart';
 import 'package:toto_user/design_system/app_typography.dart';
 
-/// Bottom nav item — Lumen Atelier tokens. SVG assets kept.
+/// Bottom nav item â€” Lumen Atelier tokens. SVG assets kept.
 class BottomNavItem extends StatelessWidget {
   final String icon;
   final String activeIcon;
@@ -41,7 +41,7 @@ class BottomNavItem extends StatelessWidget {
           borderRadius: AppRadius.mdAll,
           child: AnimatedContainer(
             duration: AppDurations.fast,
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -53,7 +53,9 @@ class BottomNavItem extends StatelessWidget {
                       width: 22,
                       height: 22,
                       colorFilter: ColorFilter.mode(
-                        isSelected ? colors.accent : colors.inkMuted,
+                        isSelected
+                            ? const Color(0xFFE44732)
+                            : const Color(0xFF9E9E9E),
                         BlendMode.srcIn,
                       ),
                     ),
@@ -84,7 +86,9 @@ class BottomNavItem extends StatelessWidget {
                 Text(
                   label,
                   style: AppTypography.labelSm(
-                    isSelected ? colors.accent : colors.inkMuted,
+                    isSelected
+                        ? const Color(0xFFE44732)
+                        : const Color(0xFF9E9E9E),
                   ),
                 ),
               ],

@@ -14,7 +14,6 @@ import 'package:toto_user/features/location/widgets/location_search_dialog.dart'
 import 'package:toto_user/features/location/widgets/permission_dialog.dart';
 import 'package:toto_user/features/profile/controllers/profile_controller.dart';
 import 'package:toto_user/features/splash/controllers/splash_controller.dart';
-import 'package:toto_user/features/splash/controllers/theme_controller.dart';
 import 'package:toto_user/helper/custom_validator.dart';
 import 'package:toto_user/helper/responsive_helper.dart';
 import 'package:toto_user/helper/route_helper.dart';
@@ -27,8 +26,10 @@ import 'package:toto_user/common/widgets/menu_drawer_widget.dart';
 import 'package:toto_user/common/widgets/web_page_title_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart' as ll;
+import 'package:maplibre/maplibre.dart' hide Position;
 import 'package:get/get.dart';
+import 'package:toto_user/helper/address_helper.dart';
 
 class AddAddressScreen extends StatefulWidget {
   final bool fromCheckout;
@@ -69,8 +70,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
   final FocusNode _floorNode = FocusNode();
   final FocusNode _levelNode = FocusNode();
   final FocusNode _emailFocus = FocusNode();
-  CameraPosition? _cameraPosition;
-  late LatLng _initialPosition;
+  MapController? _mapController;
+  late ll.LatLng _initialPosition;
   bool _otherSelect = false;
   String? _countryDialCode =
       Get.find<AuthController>().getUserCountryCode().isNotEmpty
@@ -93,7 +94,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       Get.find<ProfileController>().getUserInfo();
     }
     if (widget.address == null) {
-      _initialPosition = LatLng(
+      _initialPosition = ll.LatLng(
         double.parse(
             Get.find<SplashController>().configModel?.defaultLocation?.lat ??
                 '0'),
@@ -103,7 +104,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
       );
     } else {
       Get.find<LocationController>().updateAddress(widget.address!);
-      _initialPosition = LatLng(
+      _initialPosition = ll.LatLng(
         double.parse(widget.address?.latitude ?? '0'),
         double.parse(widget.address?.longitude ?? '0'),
       );
@@ -255,6 +256,72 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     );
   }
 
+  static const String _openFreeMapStyle =
+      'https://tiles.openfreemap.org/styles/liberty';
+
+  Geographic _toGeographic(ll.LatLng point) {
+    return Geographic(
+      lon: point.longitude,
+      lat: point.latitude,
+    );
+  }
+
+  ll.LatLng _toLatLng(Geographic point) {
+    return ll.LatLng(point.lat, point.lon);
+  }
+
+  Future<void> _moveMapCamera(
+    ll.LatLng target, {
+    double zoom = 16,
+  }) async {
+
+    final controller = _mapController;
+    if (controller == null) return;
+
+    await controller.animateCamera(
+      center: _toGeographic(target),
+      zoom: zoom,
+    );
+  }
+
+  Future<void> _moveToCurrentLocation(
+    LocationController locationController,
+  ) async {
+    final AddressModel address =
+        await locationController.getCurrentLocation(true);
+
+    if (address.latitude == null || address.longitude == null) {
+      return;
+    }
+
+    final target = ll.LatLng(
+      double.parse(address.latitude!),
+      double.parse(address.longitude!),
+    );
+
+    await _moveMapCamera(target, zoom: 16);
+    locationController.updatePosition(target, true);
+  }
+
+  Future<void> _openPickMap(
+    LocationController locationController,
+  ) async {
+    final result = await Get.toNamed(
+      RouteHelper.getPickMapRoute('add-address', false),
+      arguments: PickMapScreen(
+        fromAddAddress: true,
+        fromSignUp: false,
+        fromSplash: false,
+        route: null,
+        canRoute: false,
+      ),
+    );
+
+    if (result is ll.LatLng) {
+      await _moveMapCamera(result, zoom: 16);
+      locationController.updatePosition(result, true);
+    }
+  }
   Widget addressSectionWidget(
       LocationController locationController, bool isDesktop) {
     return Container(
@@ -281,56 +348,50 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
             child: Stack(clipBehavior: Clip.none, children: [
-              GoogleMap(
-                initialCameraPosition:
-                    CameraPosition(target: _initialPosition, zoom: 17),
-                minMaxZoomPreference: const MinMaxZoomPreference(0, 16),
-                onTap: isDesktop
-                    ? null
-                    : (latLng) {
-                        Get.toNamed(
-                          RouteHelper.getPickMapRoute('add-address', false),
-                          arguments: PickMapScreen(
-                            fromAddAddress: true,
-                            fromSignUp: false,
-                            fromSplash: false,
-                            googleMapController:
-                                locationController.mapController,
-                            route: null,
-                            canRoute: false,
-                          ),
-                        );
-                      },
-                zoomControlsEnabled: false,
-                compassEnabled: false,
-                indoorViewEnabled: true,
-                mapToolbarEnabled: false,
-                onCameraIdle: () {
-                  locationController.updatePosition(_cameraPosition, true);
-                },
-                onCameraMove: ((position) => _cameraPosition = position),
-                onMapCreated: (GoogleMapController controller) {
-                  locationController.setMapController(controller);
+              MapLibreMap(
+                options: MapOptions(
+                  initStyle: _openFreeMapStyle,
+                  initCenter: _toGeographic(_initialPosition),
+                  initZoom: 16,
+                  minZoom: 0,
+                  maxZoom: 16,
+                ),
+                onMapCreated: (MapController controller) {
+                  _mapController = controller;
+
                   if (widget.address == null) {
-                    locationController.getCurrentLocation(true,
-                        mapController: controller);
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      await _moveToCurrentLocation(locationController);
+                    });
+                  }
+                },
+                onEvent: (event) {
+                  if (event is MapEventCameraIdle) {
+                    final camera = _mapController?.camera;
+                    if (camera == null) return;
+
+                    final target = _toLatLng(camera.center);
+                                    locationController.updatePosition(target, true);
                   }
                 },
                 gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
                   Factory<OneSequenceGestureRecognizer>(
-                      () => EagerGestureRecognizer()),
-                  Factory<PanGestureRecognizer>(() => PanGestureRecognizer()),
+                    () => EagerGestureRecognizer(),
+                  ),
+                  Factory<PanGestureRecognizer>(
+                    () => PanGestureRecognizer(),
+                  ),
                   Factory<ScaleGestureRecognizer>(
-                      () => ScaleGestureRecognizer()),
-                  Factory<TapGestureRecognizer>(() => TapGestureRecognizer()),
+                    () => ScaleGestureRecognizer(),
+                  ),
+                  Factory<TapGestureRecognizer>(
+                    () => TapGestureRecognizer(),
+                  ),
                   Factory<VerticalDragGestureRecognizer>(
-                      () => VerticalDragGestureRecognizer()),
+                    () => VerticalDragGestureRecognizer(),
+                  ),
                 },
-                style: Get.isDarkMode
-                    ? Get.find<ThemeController>().darkMap
-                    : Get.find<ThemeController>().lightMap,
-              ),
-              locationController.loading
+              ),              locationController.loading
                   ? const Center(child: CircularProgressIndicator())
                   : const SizedBox(),
               Center(
@@ -343,8 +404,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 right: 0,
                 child: InkWell(
                   onTap: () => _checkPermission(() {
-                    locationController.getCurrentLocation(true,
-                        mapController: locationController.mapController);
+                    _moveToCurrentLocation(locationController);
                   }),
                   child: Container(
                     width: 30,
@@ -365,17 +425,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 right: 0,
                 child: InkWell(
                   onTap: () {
-                    Get.toNamed(
-                      RouteHelper.getPickMapRoute('add-address', false),
-                      arguments: PickMapScreen(
-                        fromAddAddress: true,
-                        fromSignUp: false,
-                        fromSplash: false,
-                        googleMapController: locationController.mapController,
-                        route: null,
-                        canRoute: false,
-                      ),
-                    );
+                    _openPickMap(locationController);
                   },
                   child: Container(
                     width: 30,
@@ -395,18 +445,16 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                 top: 10,
                 left: 10,
                 child: LocationSearchDialog(
-                  mapController: locationController.mapController,
                   fromAddress: true,
                   pickedLocation: _addressController.text,
-                  callBack: (Position? position) {
-                    if (position != null) {
-                      _cameraPosition = CameraPosition(
-                          target: LatLng(position.latitude, position.longitude),
-                          zoom: 16);
-                      locationController.mapController!.moveCamera(
-                          CameraUpdate.newCameraPosition(_cameraPosition!));
-                      locationController.updatePosition(_cameraPosition, true);
-                    }
+                  callBack: (Position position) async {
+                    final target = ll.LatLng(
+                      position.latitude,
+                      position.longitude,
+                    );
+
+                    await _moveMapCamera(target, zoom: 16);
+                    locationController.updatePosition(target, true);
                   },
                   child: Container(
                     height: 30,
@@ -737,6 +785,8 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
         .addAddress(addressModel, widget.fromCheckout, widget.zoneId)
         .then((response) {
       if (response.isSuccess) {
+        AddressHelper.saveAddressInSharedPref(addressModel);
+
         if (widget.fromNewUser) {
           // For new users, redirect to homepage after address collection
           Get.offAllNamed(RouteHelper.getMainRoute('home'));
@@ -763,3 +813,10 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
     });
   }
 }
+
+
+
+
+
+
+

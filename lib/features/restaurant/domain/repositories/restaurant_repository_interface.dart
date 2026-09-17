@@ -1,5 +1,5 @@
 import 'package:get/get_connect/http/src/response/response.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:toto_user/common/enums/data_source_enum.dart';
 import 'package:toto_user/common/models/product_model.dart';
 import 'package:toto_user/common/models/restaurant_model.dart';

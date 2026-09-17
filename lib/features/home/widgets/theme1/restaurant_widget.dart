@@ -1,4 +1,4 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:toto_user/common/widgets/custom_image_widget.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:toto_user/design_system/design_system.dart';
@@ -32,9 +32,23 @@ class RestaurantWidget extends StatelessWidget {
     final r = restaurant!;
 
     return GetBuilder<RestaurantController>(builder: (restoCtrl) {
-    final distanceLabel = restoCtrl.formatRestaurantDistance(
-      LatLng(double.parse(r.latitude!), double.parse(r.longitude!)),
-    );
+      final restaurantLatLng = LatLng(
+        double.parse(r.latitude!),
+        double.parse(r.longitude!),
+      );
+
+      if (!restoCtrl.hasRoadDistance(restaurantLatLng)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          restoCtrl.loadRoadDistance(
+            restaurantLatLng,
+            notify: true,
+          );
+        });
+      }
+
+      final distanceLabel = restoCtrl.formatRestaurantDistance(
+        restaurantLatLng,
+      );
     final open = restoCtrl.isOpenNow(r);
     final discount = restoCtrl.getDiscount(r) ?? 0;
     final discountType = restoCtrl.getDiscountType(r);
@@ -231,3 +245,6 @@ class RestaurantShimmer extends StatelessWidget {
     );
   }
 }
+
+
+

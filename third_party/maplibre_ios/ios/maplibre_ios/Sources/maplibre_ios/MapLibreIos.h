@@ -353,6 +353,11 @@ SWIFT_CLASS_NAMED("MapLibreRegistry")
 - (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 @end
 
+@protocol FlutterPluginRegistrar;
+SWIFT_CLASS_NAMED("MapLibrePlugin")
+@interface MapLibrePlugin : NSObject
++ (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar> * _Nonnull)registrar;
+@end
 @class NSNotification;
 SWIFT_PROTOCOL_NAMED("OfflinePackProgressCallbacks")
 @protocol OfflinePackProgressCallbacks

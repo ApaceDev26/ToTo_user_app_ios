@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 # --- Resolve Flutter SDK root dynamically ---
@@ -6,7 +6,7 @@ set -euo pipefail
 # fvm-managed SDKs, asdf, etc.). Resolve the real path before walking up to the
 # SDK root, otherwise Flutter.xcframework lookup goes to the wrong place.
 if ! command -v flutter >/dev/null 2>&1; then
-  echo "❌ Flutter not found in PATH. Please ensure 'flutter' is installed and available."
+  echo "âŒ Flutter not found in PATH. Please ensure 'flutter' is installed and available."
   exit 1
 fi
 
@@ -24,14 +24,14 @@ SWIFT_TARGET="arm64-apple-ios${SDK_VERSION}-simulator"
 FLUTTER_FRAMEWORK_PATH="$FLUTTER_ROOT/bin/cache/artifacts/engine/ios/Flutter.xcframework/ios-arm64_x86_64-simulator"
 
 if [ ! -d "$FLUTTER_FRAMEWORK_PATH" ]; then
-  echo "❌ Flutter.xcframework not found at: $FLUTTER_FRAMEWORK_PATH"
+  echo "âŒ Flutter.xcframework not found at: $FLUTTER_FRAMEWORK_PATH"
   echo "Run 'flutter precache --ios' to download iOS engine artifacts."
   exit 1
 fi
 
-echo "✅ Using Flutter framework at: $FLUTTER_FRAMEWORK_PATH"
-echo "✅ Using iOS SDK at: $SDK_PATH"
-echo "✅ Swift target: $SWIFT_TARGET"
+echo "âœ… Using Flutter framework at: $FLUTTER_FRAMEWORK_PATH"
+echo "âœ… Using iOS SDK at: $SDK_PATH"
+echo "âœ… Swift target: $SWIFT_TARGET"
 
 # --- Compile Swift sources and emit Objective-C headers ---
 swiftc \
@@ -39,6 +39,7 @@ swiftc \
   -c FlutterApi.swift \
   -c Helpers.swift \
   -c MapLibreRegistry.swift \
+  -c MapLibrePlugin.swift \
   -module-name maplibre_ios \
   -emit-objc-header-path MapLibreIos.h \
   -emit-library -o libmaplibreios.dylib \
@@ -49,4 +50,5 @@ swiftc \
   -framework MapLibre \
   -framework Flutter
 
-echo "✅ Swift headers generated successfully: MapLibreIos.h"
+echo "âœ… Swift headers generated successfully: MapLibreIos.h"
+

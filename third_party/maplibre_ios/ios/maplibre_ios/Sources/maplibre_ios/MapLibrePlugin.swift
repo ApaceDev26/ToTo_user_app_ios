@@ -1,10 +1,10 @@
-import Flutter
+﻿import Flutter
 import MapLibre
 import UIKit
 
 @objc(MapLibrePlugin)
 public class MapLibrePlugin: NSObject, FlutterPlugin {
-    public static func register(with registrar: FlutterPluginRegistrar) {
+    @objc(registerWithRegistrar:) public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
             name: "maplibre_ios", binaryMessenger: registrar.messenger()
         )
@@ -18,4 +18,5 @@ public class MapLibrePlugin: NSObject, FlutterPlugin {
 
     public func handle(_: FlutterMethodCall, result _: @escaping FlutterResult) {}
 }
+
 

@@ -8,6 +8,7 @@ import 'package:toto_user/common/models/restaurant_model.dart';
 import 'package:toto_user/features/address/domain/models/address_model.dart';
 import 'package:toto_user/features/location/controllers/location_controller.dart';
 import 'package:toto_user/features/order/domain/models/order_model.dart';
+import 'package:toto_user/features/order/widgets/order_map_markers.dart';
 import 'package:toto_user/helper/directions_helper.dart';
 import 'package:toto_user/helper/responsive_helper.dart';
 import 'package:toto_user/util/dimensions.dart';
@@ -123,48 +124,6 @@ class _TrackingMapWidgetState extends State<TrackingMapWidget> {
     return const ll.LatLng(0, 0);
   }
 
-  List<Feature<Point>> _destinationPoints(AddressModel? address) {
-    if (address?.latitude == null || address?.longitude == null) {
-      return [];
-    }
-
-    final point = _addressLocation(address!);
-
-    return [
-      Feature<Point>(
-        geometry: Point(_toGeographic(point)),
-      ),
-    ];
-  }
-
-  List<Feature<Point>> _restaurantPoints(Restaurant? restaurant) {
-    if (restaurant?.latitude == null || restaurant?.longitude == null) {
-      return [];
-    }
-
-    final point = _restaurantLocation(restaurant!);
-
-    return [
-      Feature<Point>(
-        geometry: Point(_toGeographic(point)),
-      ),
-    ];
-  }
-
-  List<Feature<Point>> _deliveryManPoints(DeliveryMan? deliveryMan) {
-    final point = _deliveryManLocation(deliveryMan);
-
-    if (point == null) {
-      return [];
-    }
-
-    return [
-      Feature<Point>(
-        geometry: Point(_toGeographic(point)),
-      ),
-    ];
-  }
-
   List<Feature<LineString>> _routeFeatures() {
     if (_routePoints.length < 2) {
       return [];
@@ -181,11 +140,7 @@ class _TrackingMapWidgetState extends State<TrackingMapWidget> {
     ];
   }
 
-  List<Layer> _buildLayers(
-    Restaurant? restaurant,
-    DeliveryMan? deliveryMan,
-    AddressModel? address,
-  ) {
+  List<Layer> _buildLayers() {
     return [
       if (_routePoints.length >= 2)
         PolylineLayer(
@@ -195,29 +150,6 @@ class _TrackingMapWidgetState extends State<TrackingMapWidget> {
           dashArray: const [5, 3],
         ),
 
-      CircleLayer(
-        points: _destinationPoints(address),
-        radius: 9,
-        color: const Color(0xFF1976D2),
-        strokeWidth: 3,
-        strokeColor: Colors.white,
-      ),
-
-      CircleLayer(
-        points: _restaurantPoints(restaurant),
-        radius: 10,
-        color: const Color(0xFFFF6D00),
-        strokeWidth: 3,
-        strokeColor: Colors.white,
-      ),
-
-      CircleLayer(
-        points: _deliveryManPoints(deliveryMan),
-        radius: 10,
-        color: const Color(0xFF2E7D32),
-        strokeWidth: 3,
-        strokeColor: Colors.white,
-      ),
     ];
   }
 
@@ -247,6 +179,7 @@ class _TrackingMapWidgetState extends State<TrackingMapWidget> {
 
     final address = _getDestinationAddress(track);
     final initialTarget = _getInitialTarget(track);
+    final riderLocation = _deliveryManLocation(track.deliveryMan);
 
     return Container(
       height: 200,
@@ -272,11 +205,22 @@ class _TrackingMapWidgetState extends State<TrackingMapWidget> {
                 minZoom: 0,
                 maxZoom: 16,
               ),
-              layers: _buildLayers(
-                track.restaurant,
-                track.deliveryMan,
-                address,
-              ),
+              layers: _buildLayers(),
+              children: [
+                OrderMapMarkers(
+                  restaurant: track.restaurant?.latitude != null &&
+                          track.restaurant?.longitude != null
+                      ? _toGeographic(_restaurantLocation(track.restaurant!))
+                      : null,
+                  rider: riderLocation == null
+                      ? null
+                      : _toGeographic(riderLocation),
+                  customer: address?.latitude != null &&
+                          address?.longitude != null
+                      ? _toGeographic(_addressLocation(address!))
+                      : null,
+                ),
+              ],
               onMapCreated: (MapController controller) async {
                 _controller = controller;
 

@@ -1,4 +1,5 @@
 import 'package:toto_user/features/auth/controllers/auth_controller.dart';
+import 'package:toto_user/design_system/app_colors.dart';
 import 'package:toto_user/features/order/controllers/order_controller.dart';
 import 'package:toto_user/features/profile/controllers/profile_controller.dart';
 import 'package:toto_user/features/profile/widgets/account_deletion_bottom_sheet.dart';
@@ -28,6 +29,7 @@ class WebProfileWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return GetBuilder<ProfileController>(builder: (profileController) {
       bool isLoggedIn = Get.find<AuthController>().isLoggedIn();
       return SizedBox(
@@ -40,11 +42,12 @@ class WebProfileWidget extends StatelessWidget {
                 height: 162,
                 width: Dimensions.webMaxWidth,
                 decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).primaryColor.withValues(alpha: 0.10),
-                    image: const DecorationImage(
-                        image: AssetImage(Images.profileBackground),
-                        fit: BoxFit.fitWidth)),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF102C55), Color(0xFF225B99)],
+                    ),
+                    borderRadius: BorderRadius.circular(20)),
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: Padding(
@@ -52,15 +55,23 @@ class WebProfileWidget extends StatelessWidget {
                         top: Dimensions.paddingSizeDefault),
                     child: Text('profile'.tr,
                         style: robotoBold.copyWith(
-                            fontSize: Dimensions.fontSizeLarge)),
+                            fontSize: Dimensions.fontSizeLarge,
+                            color: Colors.white)),
                   ),
                 ),
               ),
               Positioned(
                 top: 96,
-                left: (Dimensions.webMaxWidth / 2) - 60,
-                child: ClipOval(
-                    child: CustomImageWidget(
+                left: (Dimensions.webMaxWidth / 2) - 63,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.accent, width: 2),
+                    color: colors.surface,
+                  ),
+                  child: ClipOval(
+                      child: CustomImageWidget(
                   placeholder:
                       isLoggedIn ? Images.profilePlaceholder : Images.guestIcon,
                   image:
@@ -70,6 +81,7 @@ class WebProfileWidget extends StatelessWidget {
                   fit: BoxFit.cover,
                   imageColor: isLoggedIn ? Theme.of(context).hintColor : null,
                 )),
+                ),
               ),
               Positioned.fill(
                 child: Align(

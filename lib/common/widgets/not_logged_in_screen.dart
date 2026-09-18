@@ -56,9 +56,7 @@ class NotLoggedInScreen extends StatelessWidget {
                     Get.dialog(const Center(child: AuthDialogWidget(exitFromApp: false, backFromThis: true))).then((value) => callBack(true));
                     // Get.dialog(const SignInScreen(exitFromApp: false, backFromThis: true)).then((value) => callBack(true));
                   }
-                  if(Get.find<OrderController>().showBottomSheet) {
-                    Get.find<OrderController>().showRunningOrders();
-                  }
+                  Get.find<OrderController>().showRunningOrders();
                   callBack(true);
 
                 }),

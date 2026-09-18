@@ -142,7 +142,7 @@ class RestaurantDescriptionViewWidget extends StatelessWidget {
               AddressModel(
                 id: restaurant!.id, address: restaurant!.address, latitude: restaurant!.latitude,
                 longitude: restaurant!.longitude, contactPersonNumber: '', contactPersonName: '', addressType: '',
-              ), 'restaurant',
+              ), 'restaurant', restaurantName: restaurant!.name, restaurant: restaurant,
             )),
             child: Column(children: [
               // Icon(Icons.location_on, color: Theme.of(context).primaryColor, size: 20),

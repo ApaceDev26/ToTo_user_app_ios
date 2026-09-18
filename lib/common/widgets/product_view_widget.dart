@@ -81,8 +81,8 @@ class ProductViewWidget extends StatelessWidget {
                           : isWebRestaurant!
                               ? 280
                               : showTheme1Restaurant
-                                  // Cover 118 + text block + cardGap â‰ˆ 230+
-                                  ? 236
+                                  // Cover 125 + Logo overlap + text block + cardGap
+                                  ? 295
                                   : 156,
                       crossAxisCount: ResponsiveHelper.isMobile(context) &&
                               !isWebRestaurant!

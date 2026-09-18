@@ -299,14 +299,8 @@ class _MyAppState extends State<MyApp> {
                       }
                     }
 
-                    // Get navigation bar color based on current theme
-                    final Color navBarColor =
-                        SystemUIHelper.getNavigationBarColorForTheme(
-                      isDarkTheme: themeController.darkTheme,
-                      // Customize these colors to match your app design
-                      // lightColor: Colors.blue, // Example: Use blue for light theme
-                      // darkColor: const Color(0xFF1E1E1E), // Example: Use dark gray for dark theme
-                    );
+                    // জেসচার বারকে সম্পূর্ণ ট্রান্সপারেন্ট করা হলো যাতে অ্যাপের কন্টেন্ট একদম স্ক্রিনের শেষ প্রান্ত পর্যন্ত দেখা যায়
+                    const Color navBarColor = Colors.transparent;
 
                     return MediaQuery(
                       data: MediaQuery.of(context)
@@ -318,7 +312,7 @@ class _MyAppState extends State<MyApp> {
                         child: Material(
                             child: SafeArea(
                           top: false,
-                          bottom: GetPlatform.isAndroid,
+                          bottom: false, // Edge-to-edge এর ব্যাকগ্রাউন্ড ম্যাচ করার জন্য কন্টেন্টকে বটম সেফএরিয়া লক থেকে মুক্ত করা হলো
                           child: Stack(children: [
                             widget!,
                             GetBuilder<SplashController>(

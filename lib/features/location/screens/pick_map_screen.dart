@@ -1,4 +1,4 @@
-import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
+﻿import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
 import 'package:toto_user/features/splash/controllers/splash_controller.dart';
 import 'package:toto_user/features/address/domain/models/address_model.dart';
 import 'package:toto_user/features/location/controllers/location_controller.dart';
@@ -44,6 +44,12 @@ class _PickMapScreenState extends State<PickMapScreen> {
   late ll.LatLng _initialPosition;
   late ll.LatLng _cameraTarget;
   double _cameraZoom = 16;
+
+  @override
+  void dispose() {
+    _mapController = null;
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -204,6 +210,7 @@ class _PickMapScreenState extends State<PickMapScreen> {
                 return Stack(
                   children: [
                     MapLibreMap(
+                      key: const ValueKey('toto_pick_map'),
                       options: MapOptions(
                         initStyle: _openFreeMapStyle,
                         initCenter: _toGeographic(_cameraTarget),
@@ -218,6 +225,8 @@ class _PickMapScreenState extends State<PickMapScreen> {
                             widget.route != 'splash') {
                           WidgetsBinding.instance
                               .addPostFrameCallback((_) async {
+                            if (!mounted) return;
+
                             final savedAddress =
                                 AddressHelper.getAddressFromSharedPref();
 
@@ -234,6 +243,8 @@ class _PickMapScreenState extends State<PickMapScreen> {
 
                               await _moveCamera(savedLocation);
 
+                              if (!mounted) return;
+
                               locationController.updatePosition(
                                 savedLocation,
                                 false,
@@ -242,7 +253,11 @@ class _PickMapScreenState extends State<PickMapScreen> {
                               await _moveToCurrentLocation(
                                 locationController,
                               );
+
+                              if (!mounted) return;
                             }
+
+                            if (!mounted) return;
 
                             if (widget.fromSplash) {
                               _onPickAddressButtonPressed(
@@ -387,6 +402,9 @@ class _PickMapScreenState extends State<PickMapScreen> {
     }
   }
 }
+
+
+
 
 
 

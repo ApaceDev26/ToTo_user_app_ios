@@ -460,7 +460,7 @@ class _RestaurantCoverCard extends StatelessWidget {
                                 restaurant.name ?? '',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.titleSm(colors.onAccent),
+                                style: AppTypography.titleSm(colors.ink),
                               ),
                               const SizedBox(height: 2),
                               Row(
@@ -470,8 +470,7 @@ class _RestaurantCoverCard extends StatelessWidget {
                                         size: 13, color: colors.rating),
                                     Text(
                                       ' ${restaurant.avgRating!.toStringAsFixed(1)}',
-                                      style: AppTypography.labelSm(
-                                          colors.onAccent),
+                                      style: AppTypography.labelSm(colors.ink),
                                     ),
                                     const SizedBox(width: AppSpacing.sm),
                                   ],
@@ -481,7 +480,7 @@ class _RestaurantCoverCard extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppTypography.bodySm(
-                                        colors.onAccent.withValues(alpha: 0.8),
+                                        colors.ink.withValues(alpha: 0.8),
                                       ),
                                     ),
                                   ),

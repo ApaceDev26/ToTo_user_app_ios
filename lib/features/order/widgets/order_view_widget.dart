@@ -143,8 +143,8 @@ class OrderViewWidget extends StatelessWidget {
                                           : 2,
                                   mainAxisExtent:
                                       ResponsiveHelper.isDesktop(context)
-                                          ? 130
-                                          : 115,
+                                          ? 140
+                                          : 125,
                                 ),
                                 padding: ResponsiveHelper.isDesktop(context)
                                     ? const EdgeInsets.symmetric(

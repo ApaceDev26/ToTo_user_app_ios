@@ -1,9 +1,9 @@
-﻿name: toto_user
+name: toto_user
 description: A new Flutter application.
 publish_to: 'none' #
 
 
-version: 1.0.0+4
+version: 1.0.2+7
 
 
 environment:
@@ -83,6 +83,7 @@ dependencies:
   video_player: any
   maplibre: 0.3.6
   latlong2: 0.10.1
+  flutter_native_splash: ^2.4.6
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -90,7 +91,6 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   drift_dev: ^2.21.2
   build_runner: ^2.4.13
-  flutter_native_splash: ^2.4.6
   flutter_launcher_icons: ^0.14.4
   change_app_package_name: ^1.5.0
 
@@ -125,8 +125,9 @@ flutter:
           weight: 900
 
 
-  # à¦ à¦¿à¦• à¦à¦‡ à§¨à¦Ÿà¦¿ à¦²à¦¾à¦‡à¦¨ à¦¸à§à¦ªà§‡à¦¸à¦¿à¦‚ (Indentation) à¦ à¦¿à¦• à¦°à§‡à¦–à§‡ à¦¯à§‹à¦— à¦•à¦°à§à¦¨ ðŸš€
+  # ঠিক এই ২টি লাইন স্পেসিং (Indentation) ঠিক রেখে যোগ করুন 🚀
   config:
     enable-swift-package-manager: false
+
 
 

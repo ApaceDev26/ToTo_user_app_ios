@@ -20,6 +20,7 @@ import 'package:toto_user/features/product/controllers/campaign_controller.dart'
 import 'package:toto_user/features/home/controllers/home_controller.dart';
 import 'package:toto_user/features/home/screens/web_home_screen.dart';
 import 'package:toto_user/features/home/widgets/all_restaurant_filter_widget.dart';
+import 'package:toto_user/features/home/widgets/all_restaurant_food_view_widget.dart';
 import 'package:toto_user/features/home/widgets/enjoy_off_banner_view_widget.dart';
 import 'package:toto_user/features/home/widgets/location_banner_view_widget.dart';
 import 'package:toto_user/features/home/widgets/new_on_stackfood_view_widget.dart';
@@ -297,6 +298,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             children: [
               SafeArea(
                 top: (Get.find<SplashController>().configModel!.theme == 2),
+                bottom: false, // বটম সেফএরিয়া অফ করা হলো যাতে লিস্টটি একদম নেভিগেশন বারের তলা পর্যন্ত বিস্তৃত হয়
                 child: RefreshIndicator(
                   key: ValueKey<String>(
                     ResponsiveHelper.isDesktop(context)
@@ -685,6 +687,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                           const WhatOnYourMindViewWidget(),
                                           const BannerViewWidget1(),
                                           const TodayTrendsViewWidget(),
+                                          const AllRestaurantFoodViewWidget(),
                                           const LocationBannerViewWidget(),
                                           const HighlightWidgetView(),
                                           _isLogin

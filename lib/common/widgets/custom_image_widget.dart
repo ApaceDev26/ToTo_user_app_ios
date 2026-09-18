@@ -36,6 +36,13 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = widget.width != null && widget.width!.isFinite && widget.width! > 0
+        ? (widget.width! * pixelRatio).ceil()
+        : null;
+    final cacheHeight = widget.height != null && widget.height!.isFinite && widget.height! > 0
+        ? (widget.height! * pixelRatio).ceil()
+        : null;
     // If image is empty, show placeholder directly
     if (widget.image.isEmpty) {
       return CustomAssetImageWidget(
@@ -75,6 +82,8 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
           height: widget.height,
           width: widget.width,
           fit: widget.fit,
+          memCacheWidth: cacheWidth,
+          memCacheHeight: cacheHeight,
           placeholder: (context, url) => CustomAssetImageWidget(
               widget.placeholder.isNotEmpty
                   ? widget.placeholder

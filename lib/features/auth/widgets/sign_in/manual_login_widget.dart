@@ -1,6 +1,7 @@
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:toto_user/design_system/app_colors.dart';
 import 'package:toto_user/common/widgets/custom_button_widget.dart';
 import 'package:toto_user/common/widgets/custom_ink_well_widget.dart';
 import 'package:toto_user/common/widgets/custom_text_field_widget.dart';
@@ -68,6 +69,46 @@ class ManualLoginWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 70),
+            if (onOtpViewClick != null) ...[
+              CustomButtonWidget(
+                height: isDesktop ? 50 : null,
+                width: isDesktop ? 250 : null,
+                buttonText: 'Sign in with OTP'.tr,
+                radius: isDesktop ? Dimensions.radiusSmall : 100,
+                isBold: false,
+                isLoading: authController.isLoading,
+                onPressed: onOtpViewClick,
+                color: AppColors.of(context).accent,
+                textColor: AppColors.of(context).onAccent,
+                fontSize: isDesktop
+                    ? Dimensions.fontSizeSmall
+                    : Dimensions.fontSizeDefault,
+              ),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: Theme.of(context).disabledColor,
+                      thickness: 1,
+                    ),
+                  ),
+                  const SizedBox(width: Dimensions.paddingSizeSmall),
+                  Text('Or'.tr,
+                      style: robotoRegular.copyWith(
+                          color: Theme.of(context).disabledColor)),
+                  const SizedBox(width: Dimensions.paddingSizeSmall),
+                  Expanded(
+                    child: Divider(
+                      color: Theme.of(context).disabledColor,
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+            ],
             CustomTextFieldWidget(
               onCountryChanged: (countryCode) =>
                   authController.countryDialCode = countryCode.dialCode!,
@@ -197,64 +238,6 @@ class ManualLoginWidget extends StatelessWidget {
               isLoading: authController.isLoading,
               onPressed: onClickLoginButton,
             ),
-            SizedBox(
-                height: isDesktop
-                    ? Dimensions.paddingSizeLarge
-                    : Dimensions.paddingSizeSmall),
-            onOtpViewClick != null
-                ? Column(children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Divider(
-                            color: Theme.of(context).disabledColor,
-                            thickness: 1,
-                          ),
-                        ),
-                        const SizedBox(width: Dimensions.paddingSizeSmall),
-                        Text('Or'.tr,
-                            style: robotoRegular.copyWith(
-                                color: Theme.of(context).disabledColor)),
-                        const SizedBox(width: Dimensions.paddingSizeSmall),
-                        Expanded(
-                          child: Divider(
-                            color: Theme.of(context).disabledColor,
-                            thickness: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Dimensions.paddingSizeExtraSmall),
-                    CustomButtonWidget(
-                      height: isDesktop ? 50 : null,
-                      width: isDesktop ? 250 : null,
-                      buttonText: 'Sign in with OTP'.tr,
-                      radius: isDesktop ? Dimensions.radiusSmall : 100,
-                      isBold: isDesktop ? false : false,
-                      isLoading: authController.isLoading,
-                      onPressed: onOtpViewClick,
-                      color: Colors.grey.withOpacity(0.2),
-                      textColor: Colors.black.withOpacity(0.8),
-                      fontSize: isDesktop
-                          ? Dimensions.fontSizeSmall
-                          : Dimensions.fontSizeDefault,
-                    ),
-                    // Row(mainAxisSize: MainAxisSize.min, children: [
-                    //   Text('sign_in_with'.tr,
-                    //       style: robotoRegular.copyWith(
-                    //           color: Theme.of(context).disabledColor)),
-                    //   const SizedBox(width: Dimensions.paddingSizeExtraSmall),
-                    //   InkWell(
-                    //     onTap: onOtpViewClick,
-                    //     child: Text('otp'.tr,
-                    //         style: robotoRegular.copyWith(
-                    //             color: Theme.of(context).primaryColor,
-                    //             decoration: TextDecoration.underline)),
-                    //   ),
-                    // ]),
-                  ])
-                : const SizedBox(),
             const SizedBox(height: Dimensions.paddingSizeLarge),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

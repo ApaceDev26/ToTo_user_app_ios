@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:toto_user/common/models/restaurant_model.dart';
 import 'package:toto_user/common/widgets/custom_snackbar_widget.dart';
+import 'package:toto_user/common/widgets/custom_image_widget.dart';
 import 'package:toto_user/common/widgets/menu_drawer_widget.dart';
 import 'package:toto_user/features/address/domain/models/address_model.dart';
 import 'package:toto_user/features/home/widgets/google_map_widgets/restaurant_details_sheet_widget.dart';
@@ -92,7 +93,8 @@ class MapScreenState extends State<MapScreen> {
   List<Layer> _buildMarkerLayers() {
     final List<Layer> layers = [];
 
-    layers.add(
+    if (widget.restaurant == null || !widget.fromRestaurant) {
+      layers.add(
       CircleLayer(
         points: [
           Feature<Point>(
@@ -104,7 +106,8 @@ class MapScreenState extends State<MapScreen> {
         strokeColor: Colors.white,
         strokeWidth: 3,
       ),
-    );
+      );
+    }
 
     if (!widget.fromDineInOrder && _myLocation != null) {
       layers.add(
@@ -174,6 +177,33 @@ class MapScreenState extends State<MapScreen> {
                   maxZoom: 18,
                 ),
                 layers: _buildMarkerLayers(),
+                children: [
+                  if (widget.fromRestaurant && widget.restaurant != null)
+                    WidgetLayer(markers: [
+                      Marker(
+                        point: _toGeographic(_latLng),
+                        size: const Size(60, 60),
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Theme.of(context).primaryColor, width: 3),
+                            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))],
+                          ),
+                          child: ClipOval(
+                            child: CustomImageWidget(
+                              image: widget.restaurant!.logoFullUrl ?? '',
+                              isRestaurant: true,
+                              width: 46,
+                              height: 46,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
+                ],
                 onMapCreated: (MapController controller) {
                   _mapController = controller;
 
@@ -224,7 +254,7 @@ class MapScreenState extends State<MapScreen> {
                       height: Dimensions.paddingSizeLarge,
                     ),
 
-                    widget.restaurant != null
+                    widget.restaurant != null && !widget.fromRestaurant
                         ? RestaurantDetailsSheetWidget(
                             restaurant: widget.restaurant!,
                             isActive: true,

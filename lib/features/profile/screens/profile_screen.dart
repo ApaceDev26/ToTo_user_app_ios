@@ -104,18 +104,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               orderController: orderController)
                           : isLoggedIn
                               ? Container(
-                                  color: colors.accentSoft,
+                                  color: const Color(0xFFEAF2FC),
                                   width: Dimensions.webMaxWidth,
-                                  height: context.height - 80,
+                                  constraints: BoxConstraints(
+                                      minHeight: context.height - 80),
                                   child: Center(
                                     child: Column(children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.x2l,
-                                            vertical: AppSpacing.x3l),
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.fromLTRB(
+                                            AppSpacing.x2l,
+                                            AppSpacing.x3l,
+                                            AppSpacing.x2l,
+                                            AppSpacing.x3l + AppSpacing.md),
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Color(0xFF102C55),
+                                              Color(0xFF225B99),
+                                            ],
+                                          ),
+                                        ),
                                         child: Row(children: [
-                                          ClipOval(
-                                              child: CustomImageWidget(
+                                          Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                  color: colors.accent,
+                                                  width: 2),
+                                            ),
+                                            child: ClipOval(
+                                                child: CustomImageWidget(
                                             placeholder: isLoggedIn
                                                 ? Images.profilePlaceholder
                                                 : Images.guestIcon,
@@ -128,6 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 ? colors.inkFaint
                                                 : null,
                                           )),
+                                          ),
                                           const SizedBox(width: AppSpacing.lg),
                                           Expanded(
                                             child: Column(
@@ -139,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                         ? '${profileController.userInfoModel?.fName ?? ''} ${profileController.userInfoModel?.lName ?? ''}'
                                                         : 'guest_user'.tr,
                                                     style: AppTypography
-                                                        .titleMd(colors.ink),
+                                                        .titleMd(Colors.white),
                                                   ),
                                                   const SizedBox(
                                                       height: AppSpacing.xs),
@@ -153,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                               : '',
                                                           style: AppTypography
                                                               .bodySm(
-                                                                  colors.accent),
+                                                                  const Color(0xFFD8E9FF)),
                                                         )
                                                       : InkWell(
                                                           onTap: () async {
@@ -194,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   child: Container(
                                                     decoration: BoxDecoration(
                                                       shape: BoxShape.circle,
-                                                      color: colors.surface,
+                                                      color: colors.accent,
                                                       boxShadow:
                                                           AppShadows.of(
                                                               context, 1),
@@ -205,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                     child: Icon(
                                                         Icons.edit_outlined,
                                                         size: AppIcons.md,
-                                                        color: colors.accent),
+                                                        color: Colors.white),
                                                   ),
                                                 )
                                               : InkWell(
@@ -248,13 +271,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 ),
                                         ]),
                                       ),
-                                      Expanded(
-                                        child: Container(
+                                      Container(
                                           decoration: BoxDecoration(
                                             borderRadius:
                                                 const BorderRadius.vertical(
-                                                    top: Radius.circular(
-                                                        AppRadius.xl)),
+                                                    top: Radius.circular(30)),
                                             color: colors.surface,
                                           ),
                                           padding: const EdgeInsets.symmetric(
@@ -433,7 +454,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 height: isLoggedIn
                                                     ? AppSpacing.xl
                                                     : 0),
-                                            const Expanded(child: SizedBox()),
+                                            const SizedBox(height: AppSpacing.x2l),
                                             Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
@@ -452,21 +473,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                               colors.inkMuted)),
                                                 ]),
                                           ]),
-                                        ),
                                       ),
                                     ]),
                                   ),
                                 )
-                              : SizedBox(
+                              : Container(
                                   width: Dimensions.webMaxWidth,
                                   height: context.height - 87,
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFF102C55),
+                                        Color(0xFF225B99),
+                                      ],
+                                    ),
+                                  ),
                                   child: Center(
-                                    child: Column(
+                                    child: Container(
+                                      width: 360,
+                                      margin: const EdgeInsets.all(AppSpacing.xl),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.x2l,
+                                          vertical: AppSpacing.x3l),
+                                      decoration: BoxDecoration(
+                                        color: colors.surface,
+                                        borderRadius: BorderRadius.circular(24),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Color(0x33091B36),
+                                            blurRadius: 26,
+                                            offset: Offset(0, 12),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          ClipOval(
-                                              child: CustomImageWidget(
+                                          Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                  color: colors.accent,
+                                                  width: 2),
+                                            ),
+                                            child: ClipOval(
+                                                child: CustomImageWidget(
                                             placeholder: isLoggedIn
                                                 ? Images.profilePlaceholder
                                                 : Images.guestIcon,
@@ -479,24 +535,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 ? colors.inkFaint
                                                 : null,
                                           )),
+                                          ),
                                           const SizedBox(
                                               height: AppSpacing.sm),
                                           Text(
                                             'guest_user'.tr,
                                             style: AppTypography.titleMd(
-                                                colors.ink),
+                                                Theme.of(context).brightness ==
+                                                        Brightness.dark
+                                                    ? colors.ink
+                                                    : const Color(0xFF102C55)),
                                           ),
                                           const SizedBox(
                                               height: AppSpacing.sm),
-                                          SizedBox(
-                                            width: context.width * 0.6,
-                                            child: Text(
+                                          Text(
                                               'currently_you_are_in_guest_mode_please_login_to_view_all_the_features'
                                                   .tr,
                                               style: AppTypography.bodySm(
                                                   colors.inkMuted),
                                               textAlign: TextAlign.center,
-                                            ),
                                           ),
                                           const SizedBox(
                                               height: AppSpacing.x3l),
@@ -525,8 +582,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               }
                                             },
                                           ),
-                                          const SizedBox(height: 50),
                                         ]),
+                                    ),
                                   ),
                                 ),
                     ),

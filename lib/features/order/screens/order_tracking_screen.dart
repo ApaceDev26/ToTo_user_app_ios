@@ -19,6 +19,7 @@ import 'package:toto_user/features/notification/domain/models/notification_body_
 import 'package:toto_user/features/order/controllers/order_controller.dart';
 import 'package:toto_user/features/order/domain/models/order_model.dart';
 import 'package:toto_user/features/order/widgets/dine_in_restaurants_card_widget.dart';
+import 'package:toto_user/features/order/widgets/order_map_markers.dart';
 import 'package:toto_user/features/order/widgets/track_details_view.dart';
 import 'package:toto_user/helper/address_helper.dart';
 import 'package:toto_user/helper/directions_helper.dart';
@@ -161,18 +162,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen>
     return savedLocation ?? const ll.LatLng(23.8103, 90.4125);
   }
 
-  List<Feature<Point>> _pointFeature(ll.LatLng? point) {
-    if (point == null) {
-      return <Feature<Point>>[];
-    }
-
-    return <Feature<Point>>[
-      Feature<Point>(
-        geometry: Point(_toGeographic(point)),
-      ),
-    ];
-  }
-
   List<Feature<LineString>> _routeFeatures() {
     if (_routePoints.length < 2) {
       return <Feature<LineString>>[];
@@ -190,16 +179,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen>
   }
 
   List<Layer> _buildMapLayers() {
-    final ll.LatLng? destination = _currentAddress != null
-        ? _addressLocation(_currentAddress)
-        : _addressLocation(_mapDestination);
-
-    final ll.LatLng? restaurant =
-        _restaurantLocation(_mapRestaurant);
-
-    final ll.LatLng? deliveryMan =
-        _deliveryManLocation(_mapDeliveryMan);
-
     return <Layer>[
       if (_routePoints.length >= 2)
         PolylineLayer(
@@ -209,29 +188,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen>
           dashArray: const <int>[5, 3],
         ),
 
-      CircleLayer(
-        points: _pointFeature(destination),
-        radius: 9,
-        color: const Color(0xFF1976D2),
-        strokeWidth: 3,
-        strokeColor: Colors.white,
-      ),
-
-      CircleLayer(
-        points: _pointFeature(restaurant),
-        radius: 10,
-        color: const Color(0xFFFF6D00),
-        strokeWidth: 3,
-        strokeColor: Colors.white,
-      ),
-
-      CircleLayer(
-        points: _pointFeature(deliveryMan),
-        radius: 10,
-        color: const Color(0xFF2E7D32),
-        strokeWidth: 3,
-        strokeColor: Colors.white,
-      ),
     ];
   }
 
@@ -360,6 +316,10 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen>
           _mapRestaurant ??= track.restaurant;
           _mapDeliveryMan ??= track.deliveryMan;
           _mapDestination ??= trackingAddress;
+          final mapRestaurantLocation = _restaurantLocation(_mapRestaurant);
+          final mapRiderLocation = _deliveryManLocation(_mapDeliveryMan);
+          final mapCustomerLocation =
+              _addressLocation(_currentAddress ?? _mapDestination);
 
           return Center(
             child: SizedBox(
@@ -377,6 +337,19 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen>
                         maxZoom: 16,
                       ),
                       layers: _buildMapLayers(),
+                      children: [
+                        OrderMapMarkers(
+                          restaurant: mapRestaurantLocation == null
+                              ? null
+                              : _toGeographic(mapRestaurantLocation),
+                          rider: mapRiderLocation == null
+                              ? null
+                              : _toGeographic(mapRiderLocation),
+                          customer: mapCustomerLocation == null
+                              ? null
+                              : _toGeographic(mapCustomerLocation),
+                        ),
+                      ],
                       onMapCreated: (MapController controller) async {
                         _controller = controller;
 

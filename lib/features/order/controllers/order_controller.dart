@@ -500,8 +500,10 @@ class OrderController extends GetxController implements GetxService {
   }
 
   void showRunningOrders() {
-    _showBottomSheet = !_showBottomSheet;
-    update();
+    if (!_showBottomSheet) {
+      _showBottomSheet = true;
+      update();
+    }
   }
 
   void showOrders() {

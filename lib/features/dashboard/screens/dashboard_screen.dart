@@ -68,6 +68,10 @@ class DashboardScreenState extends State<DashboardScreen>
 
     _isLogin = Get.find<AuthController>().isLoggedIn();
 
+    if (_isLogin) {
+      Get.find<OrderController>().showRunningOrders();
+    }
+
     _showRegistrationSuccessBottomSheet();
 
     if (_isLogin) {
@@ -755,6 +759,7 @@ class DashboardScreenState extends State<DashboardScreen>
 
     // Refresh running orders when returning to home page
     if (pageIndex == 0 && _isLogin) {
+      Get.find<OrderController>().showRunningOrders();
       // Load both orders and then check once to avoid duplicate checks
       Future.wait([
         Get.find<OrderController>().getRunningOrders(1, notify: true),

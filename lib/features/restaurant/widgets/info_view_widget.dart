@@ -310,6 +310,7 @@ class _MetaRail extends StatelessWidget {
         ),
         'restaurant',
         restaurantName: restaurant.name,
+        restaurant: restaurant,
       )),
     ));
 

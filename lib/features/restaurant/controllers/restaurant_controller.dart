@@ -340,6 +340,30 @@ class RestaurantController extends GetxController implements GetxService {
     }
   }
 
+  Future<void> refreshRestaurantStatus() async {
+    final firstPage = await restaurantServiceInterface.getRestaurantList(
+      1, _restaurantType, _topRated, _discount, _veg, _nonVeg,
+      source: DataSourceEnum.client,
+    );
+    if (firstPage == null) return;
+
+    final current = _restaurantModel;
+    if (current?.restaurants == null) {
+      _restaurantModel = firstPage;
+    } else {
+      final freshById = {
+        for (final restaurant in firstPage.restaurants ?? <Restaurant>[])
+          restaurant.id: restaurant,
+      };
+      final restaurants = current!.restaurants!;
+      for (var index = 0; index < restaurants.length; index++) {
+        restaurants[index] = freshById[restaurants[index].id] ?? restaurants[index];
+      }
+      current.totalSize = firstPage.totalSize;
+    }
+    update();
+  }
+
   _prepareRestaurantList(RestaurantModel? restaurantModel, int offset) {
     if (restaurantModel != null) {
       if (offset == 1) {

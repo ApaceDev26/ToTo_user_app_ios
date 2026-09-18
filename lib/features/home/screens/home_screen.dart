@@ -178,11 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       final restaurantController = Get.find<RestaurantController>();
 
-      await restaurantController.getRestaurantList(
-        1,
-        false,
-        source: DataSourceEnum.client,
-      );
+      await restaurantController.refreshRestaurantStatus();
 
       if (_configModel?.popularRestaurant == 1) {
         await restaurantController.getPopularRestaurantList(
